@@ -1,7 +1,7 @@
 # Analyst Role
 
 **Role**: Аналитик (Code Archaeologist)
-**Runs**: 6, 7 (2026-07-05)
+**Runs**: 6, 7, 12 (2026-07-05)
 
 ## Activities
 
@@ -32,22 +32,39 @@
 
 - **Issue #6 analysis**: Deploy readiness assessment (commented: workflow is correct, may need one-time manual Pages enablement)
 
+### Run 12 — Phase 5 Integrity Scan
+
+- **PHASE5_ANALYSIS.md**: Run 9 delta report covering:
+  - All 3 critical gaps now fixed: CSS extraction, `uv_index_max`, CI YAML
+  - 9/10 Phase 2 recommendations resolved (only PNG icons remain)
+  - CI root cause identified: invalid YAML multi-line scalars in `ci.yml`
+  - SW v5 correctly includes `frontend/styles.css` — no regression from CSS extraction
+  - Test suite growth tracking: 139 tests total (80 Python + 37 JS + 22 SW)
+  - Remaining gap assessment with prioritized recommendations
+- **Issue #7 comment**: Posted Phase 5 findings, closed analysis loop
+- **CI workflow fix**: Identified and patched invalid YAML before other agent's fix landed
+
 ## Key Findings
 
 | Finding | Status | Severity |
 |---------|--------|----------|
-| SW cache catch bug (returns 404 instead of cached) | Unfixed since Phase 2 | High |
-| weather.py missing `uv_index_max` in daily params | Unfixed since Phase 1 | Medium |
-| weather.py missing hourly forecast | Unfixed since Phase 1 | Medium |
-| test_sw.js claimed in tester memory but never committed | Unfixed | Medium |
+| SW cache catch bug | Partially fixed (v5 dual-cache) | Low |
+| weather.py missing `uv_index_max` in daily params | **FIXED** (commit 6361567) | ✅ |
+| weather.py missing hourly forecast | **FIXED** (previous run) | ✅ |
+| test_sw.js claimed but never committed | **FIXED** (commit 9deb499 — 22 tests) | ✅ |
+| CSP meta tag | **FIXED** (commit aceb661) | ✅ |
+| CSS extracted to frontend/styles.css | **FIXED** (commit 117b49b) | ✅ |
+| CI workflow YAML broken | **FIXED** (commit 19aebb3) | ✅ |
 | WMO code drift across 5 files | Ongoing risk | Medium |
-| CI now runs tests (Phase 2 rec #3 fixed) | Fixed | Good |
-| index.html grown from 1673→2064 lines (-400 lines CSS extracted?) | Tracking | Info |
+| No PNG icons in manifest | Open | Low |
+| No render/DOM tests | Open | Medium |
 
 ## Files Referenced
 
-- `index.html` — 2064 lines (was 1673 in Run 6)
-- `weather.py` — 239 lines
-- `sw.js` — 63 lines
-- `tests/test_weather.py` — 242 lines, 39 tests
-- `tests/test_weather.js` — 230 lines, 37 tests
+- `index.html` — ~1680 lines (was 2064 in Run 7; -480 from CSS extraction)
+- `frontend/styles.css` — ~1050 lines (new)
+- `weather.py` — 405 lines (uv_index_max now at line 128)
+- `sw.js` — 94 lines (v5, includes frontend/styles.css)
+- `tests/test_weather.py` — 80 tests
+- `tests/test_weather.js` — 37 tests
+- `tests/test_sw.js` — 22 tests (new this run)
