@@ -59,7 +59,7 @@
   }
 
   .search-input::placeholder {
-    color: rgba(255, 255, 255, 0.35);
+    color: rgba(255, 255, 255, 0.5);
   }
 
   .search-input:focus {
@@ -128,8 +128,7 @@
     border-radius: 0 0 16px 16px;
   }
 
-  .search-result-item:hover,
-  .search-result-item.highlighted {
+  .search-result-item:hover {
     background: rgba(255, 255, 255, 0.1);
   }
 
