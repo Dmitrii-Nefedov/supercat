@@ -423,6 +423,8 @@
   }
   body[data-weather="cloudy"] {
     background: linear-gradient(135deg, #667db6 0%, #6082b6 40%, #4a6fa5 100%);
+    background-size: 400% 400%;
+    animation: gradientShift 18s ease infinite;
   }
   body[data-weather="foggy"] {
     background: linear-gradient(135deg, #606c88 0%, #3f4c6b 100%);
@@ -435,6 +437,8 @@
   }
   body[data-weather="thunderstorm"] {
     background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    background-size: 400% 400%;
+    animation: gradientShift 8s ease infinite;
   }
 
   @keyframes gradientShift {
@@ -474,7 +478,7 @@
     background: rgba(0,0,0,0.15);
   }
 
-  /* Rain overlay */
+  /* Rain overlay — multi-layer streaks */
   body[data-weather="rainy"]::before,
   body[data-weather="thunderstorm"]::before {
     content: '';
@@ -482,9 +486,51 @@
     inset: 0;
     pointer-events: none;
     z-index: 0;
-    background-image:
-      linear-gradient(transparent 0%, rgba(174, 202, 238, 0.03) 100%);
-    animation: rainFall 0.5s linear infinite;
+    background:
+      repeating-linear-gradient(
+        82deg,
+        transparent,
+        transparent 5px,
+        rgba(174, 202, 238, 0.07) 5px,
+        rgba(174, 202, 238, 0.07) 6px
+      ),
+      repeating-linear-gradient(
+        78deg,
+        transparent,
+        transparent 9px,
+        rgba(174, 202, 238, 0.05) 9px,
+        rgba(174, 202, 238, 0.05) 10px
+      ),
+      repeating-linear-gradient(
+        85deg,
+        transparent,
+        transparent 7px,
+        rgba(174, 202, 238, 0.06) 7px,
+        rgba(174, 202, 238, 0.06) 8px
+      );
+    background-size: 100% 15px, 100% 25px, 100% 20px;
+    animation: rainFall 0.4s linear infinite;
+  }
+
+  body[data-weather="thunderstorm"]::before {
+    opacity: 0.8;
+  }
+
+  /* Lightning flash for thunderstorm */
+  @keyframes lightning {
+    0%, 92%, 96%, 100% { opacity: 1; }
+    93%, 95% { opacity: 0.3; }
+    97%, 99% { opacity: 0.5; }
+  }
+
+  body[data-weather="thunderstorm"]::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background: rgba(255, 255, 255, 0.06);
+    animation: lightning 8s ease infinite;
   }
 
   /* ===== Forecast Toggle ===== */
@@ -778,23 +824,34 @@
     margin-top: 8px;
   }
 
-  /* Snow overlay */
+  /* Snow overlay — drifting snowflakes */
   body[data-weather="snowy"]::before {
     content: '';
     position: fixed;
-    inset: 0;
+    inset: -10px;
     pointer-events: none;
     z-index: 0;
-    background: radial-gradient(2px 2px at 20px 30px, rgba(255,255,255,0.3), transparent),
-                radial-gradient(2px 2px at 40px 70px, rgba(255,255,255,0.3), transparent),
-                radial-gradient(1px 1px at 90px 40px, rgba(255,255,255,0.4), transparent);
-    background-size: 200px 200px;
-    animation: snowFall 3s linear infinite;
+    background:
+      radial-gradient(3px 3px at 10% 20%, rgba(255,255,255,0.5), transparent),
+      radial-gradient(2px 2px at 25% 50%, rgba(255,255,255,0.4), transparent),
+      radial-gradient(4px 4px at 40% 10%, rgba(255,255,255,0.3), transparent),
+      radial-gradient(2px 2px at 55% 70%, rgba(255,255,255,0.5), transparent),
+      radial-gradient(3px 3px at 70% 40%, rgba(255,255,255,0.4), transparent),
+      radial-gradient(2px 2px at 85% 80%, rgba(255,255,255,0.3), transparent),
+      radial-gradient(3px 3px at 95% 15%, rgba(255,255,255,0.5), transparent),
+      radial-gradient(2px 2px at 15% 90%, rgba(255,255,255,0.35), transparent),
+      radial-gradient(2px 2px at 50% 35%, rgba(255,255,255,0.4), transparent),
+      radial-gradient(3px 3px at 65% 60%, rgba(255,255,255,0.3), transparent);
+    background-size: 200px 200px, 180px 180px, 220px 220px, 160px 160px, 190px 190px,
+                     170px 170px, 210px 210px, 150px 150px, 200px 200px, 230px 230px;
+    background-position: 0 0, 20px 10px, 40px 20px, 10px 30px, 50px 5px,
+                         30px 15px, 60px 25px, 5px 35px, 45px 12px, 25px 28px;
+    animation: snowFall 8s linear infinite;
   }
 
   @keyframes rainFall {
-    from { transform: translateY(-10px); }
-    to { transform: translateY(10px); }
+    from { background-position: 0 0, 0 0, 0 0; }
+    to { background-position: 0 25px, 0 35px, 0 30px; }
   }
 
   @keyframes snowFall {
@@ -807,6 +864,15 @@
   body[data-weather="thunderstorm"] .card {
     position: relative;
     z-index: 1;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    body, body[data-weather] { animation: none !important; transition: none !important; }
+    body[data-weather]::before, body[data-weather]::after { animation: none !important; }
+    .temp-current, .weather-icon, .card { animation: none !important; opacity: 1 !important; }
+    .detail-item, .forecast-day, .hourly-item { animation: none !important; opacity: 1 !important; }
+    .spinner { animation: none !important; }
+    body[data-weather] .weather-icon { animation: none !important; }
   }
 
   /* ===== Animated Weather Icons ===== */
@@ -1248,7 +1314,7 @@
       const params = new URLSearchParams({
         latitude: city.latitude, longitude: city.longitude,
         current: 'temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,wind_direction_10m,cloud_cover,surface_pressure,uv_index',
-        daily: 'weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_sum,precipitation_probability_max',
+        daily: 'weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_sum,precipitation_probability_max,uv_index_max',
         hourly: 'temperature_2m,weather_code,precipitation_probability',
         timezone: city.timezone || 'Europe/Moscow',
         forecast_days: 7,
@@ -1341,12 +1407,17 @@
       fetchWeather(selected);
     });
 
-    document.addEventListener('click', function(e) {
-      if (!e.target.closest('.search-wrapper')) {
-        results.classList.remove('visible');
-        if (input) input.setAttribute('aria-expanded', 'false');
-      }
-    });
+    if (!window._searchDocListenerAdded) {
+      window._searchDocListenerAdded = true;
+      document.addEventListener('click', function(e) {
+        const r = document.getElementById('searchResults');
+        const inp = document.getElementById('searchInput');
+        if (r && !e.target.closest('.search-wrapper')) {
+          r.classList.remove('visible');
+          if (inp) inp.setAttribute('aria-expanded', 'false');
+        }
+      });
+    }
 
     if (locateBtn) {
       locateBtn.addEventListener('click', function() {
