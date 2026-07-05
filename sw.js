@@ -85,7 +85,7 @@ self.addEventListener('fetch', function(e) {
         }
         return resp;
       }).catch(function() {
-        return caches.match('404.html');
+        return cached || caches.match('404.html');
       });
       return cached || fetchPromise;
     })
