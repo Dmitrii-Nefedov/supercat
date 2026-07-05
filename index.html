@@ -242,7 +242,7 @@
 
   .details {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns: repeat(4, 1fr);
     gap: 12px;
     margin-bottom: 28px;
   }
@@ -256,9 +256,14 @@
     animation: fadeUp 0.8s ease-out backwards;
   }
 
-  .detail-item:nth-child(1) { animation-delay: 0.1s; }
-  .detail-item:nth-child(2) { animation-delay: 0.2s; }
-  .detail-item:nth-child(3) { animation-delay: 0.3s; }
+  .detail-item:nth-child(1) { animation-delay: 0.05s; }
+  .detail-item:nth-child(2) { animation-delay: 0.1s; }
+  .detail-item:nth-child(3) { animation-delay: 0.15s; }
+  .detail-item:nth-child(4) { animation-delay: 0.2s; }
+  .detail-item:nth-child(5) { animation-delay: 0.25s; }
+  .detail-item:nth-child(6) { animation-delay: 0.3s; }
+  .detail-item:nth-child(7) { animation-delay: 0.35s; }
+  .detail-item:nth-child(8) { animation-delay: 0.4s; }
 
   .detail-item:hover {
     transform: translateY(-4px);
@@ -654,11 +659,61 @@
     position: relative;
     z-index: 1;
   }
+
+  /* ===== Animated Weather Icons ===== */
+  body[data-weather="sunny"] .weather-icon {
+    animation: spinSlow 12s linear infinite, float 4s ease-in-out infinite;
+  }
+
+  body[data-weather="cloudy"] .weather-icon {
+    animation: cloudDrift 6s ease-in-out infinite, float 4s ease-in-out infinite;
+  }
+
+  body[data-weather="rainy"] .weather-icon {
+    animation: rainBounce 1s ease-in-out infinite, float 4s ease-in-out infinite;
+  }
+
+  body[data-weather="thunderstorm"] .weather-icon {
+    animation: flash 3s ease-in-out infinite, float 4s ease-in-out infinite;
+  }
+
+  body[data-weather="snowy"] .weather-icon {
+    animation: snowDrift 5s ease-in-out infinite, float 4s ease-in-out infinite;
+  }
+
+  @keyframes spinSlow {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  @keyframes cloudDrift {
+    0%, 100% { transform: translateX(0) scale(1); }
+    50% { transform: translateX(6px) scale(1.05); }
+  }
+
+  @keyframes rainBounce {
+    0%, 100% { transform: translateY(0); }
+    25% { transform: translateY(-4px) rotate(-5deg); }
+    75% { transform: translateY(2px) rotate(3deg); }
+  }
+
+  @keyframes flash {
+    0%, 90%, 100% { opacity: 1; transform: scale(1); }
+    92% { opacity: 0.3; transform: scale(1.2); }
+    95% { opacity: 1; transform: scale(1); }
+    97% { opacity: 0.5; transform: scale(1.1); }
+  }
+
+  @keyframes snowDrift {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    25% { transform: translateY(-3px) rotate(-8deg); }
+    75% { transform: translateY(3px) rotate(8deg); }
+  }
 </style>
 </head>
 <body>
 <div class="container">
-  <div class="card" id="app">
+  <div class="card" id="app" aria-live="polite" aria-label="Прогноз погоды">
     <div class="loader" id="loader">
       <div class="spinner"></div>
       <div class="loader-text">Загружаем погоду...</div>
@@ -729,8 +784,21 @@
     return days[date.getDay()];
   }
 
-  function setWeatherTheme(code) {
-    const isDay = true;
+  function isDaytime(sunriseStr, sunsetStr) {
+    if (!sunriseStr || !sunsetStr) return true;
+    const now = new Date();
+    const rise = new Date(sunriseStr);
+    const set = new Date(sunsetStr);
+    return now >= rise && now < set;
+  }
+
+  function windDirection(degrees) {
+    if (degrees == null) return '—';
+    const dirs = ['С', 'ССВ', 'СВ', 'ВСВ', 'В', 'ВЮВ', 'ЮВ', 'ЮЮВ', 'Ю', 'ЮЮЗ', 'ЮЗ', 'ЗЮЗ', 'З', 'ЗСЗ', 'СЗ', 'ССЗ'];
+    return dirs[Math.round(degrees / 22.5) % 16];
+  }
+
+  function setWeatherTheme(code, isDay = true) {
     let theme;
     if (code === 0 || code === 1) theme = isDay ? 'sunny' : 'clear-night';
     else if (code === 2 || code === 3) theme = 'cloudy';
@@ -748,19 +816,20 @@
     return d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
   }
 
-  function renderHourly(hourly) {
+  function renderHourly(hourly, timezone) {
     const now = new Date();
-    const currentHour = now.getHours();
+    const formatter = new Intl.DateTimeFormat('ru-RU', { timeZone: timezone, hour: 'numeric', hour12: false });
+    const currentHour = parseInt(formatter.format(now));
     let html = '';
     for (let i = 0; i < hourly.time.length; i++) {
-      const h = new Date(hourly.time[i] + 'Z');
-      const hourNum = h.getHours();
+      const hourNum = parseInt(hourly.time[i].split('T')[1].split(':')[0]);
       const isNow = hourNum === currentHour;
       const hCode = hourly.weather_code[i];
       const precip = hourly.precipitation_probability[i];
+      const hDesc = wmoDescriptions[hCode] || '';
       html += `<div class="hourly-item${isNow ? ' now' : ''}" style="animation-delay:${i * 0.03}s">
         <div class="hourly-time">${isNow ? 'Сейчас' : String(hourNum).padStart(2, '0') + ':00'}</div>
-        <div class="hourly-icon">${wmoCodes[hCode] || '🌤️'}</div>
+        <div class="hourly-icon" role="img" aria-label="${hDesc}">${wmoCodes[hCode] || '🌤️'}</div>
         <div class="hourly-temp">${Math.round(hourly.temperature_2m[i])}°</div>
         ${precip != null ? `<div class="hourly-precip">${Math.round(precip)}%</div>` : ''}
       </div>`;
@@ -776,7 +845,8 @@
     const icon = wmoCodes[code] || '🌤️';
     const desc = wmoDescriptions[code] || '';
 
-    setWeatherTheme(code);
+    const day = isDaytime(daily.sunrise ? daily.sunrise[0] : null, daily.sunset ? daily.sunset[0] : null);
+    setWeatherTheme(code, day);
 
     const today = new Date();
     const dateStr = today.toLocaleDateString('ru-RU', {
@@ -790,24 +860,25 @@
     for (let i = 0; i < 7; i++) {
       const dayCode = daily.weather_code[i];
       const precip = daily.precipitation_probability_max ? daily.precipitation_probability_max[i] : null;
+      const dayDesc = wmoDescriptions[dayCode] || '';
       forecastHtml += `<div class="forecast-day">
         <div class="day-name">${getDayName(daily.time[i], i)}</div>
-        <div class="day-icon">${wmoCodes[dayCode] || '🌤️'}</div>
+        <div class="day-icon" role="img" aria-label="${dayDesc}">${wmoCodes[dayCode] || '🌤️'}</div>
         <div class="day-high">${Math.round(daily.temperature_2m_max[i])}°</div>
         <div class="day-low">${Math.round(daily.temperature_2m_min[i])}°</div>
         ${precip != null ? `<div class="day-precip">💧 ${Math.round(precip)}%</div>` : ''}
       </div>`;
     }
 
-    const hourlyHtml = hourly && hourly.time ? renderHourly(hourly) : '';
+    const hourlyHtml = hourly && hourly.time ? renderHourly(hourly, city.timezone || 'Europe/Moscow') : '';
 
     app.innerHTML = `
       <div class="search-container">
         <div class="search-wrapper">
-          <input class="search-input" id="searchInput" type="text" placeholder="Поиск города..." autocomplete="off">
-          <div class="search-results" id="searchResults"></div>
+          <input class="search-input" id="searchInput" type="text" placeholder="Поиск города..." autocomplete="off" aria-label="Поиск города" role="combobox" aria-expanded="false" aria-controls="searchResults">
+          <div class="search-results" id="searchResults" role="listbox" aria-label="Результаты поиска"></div>
         </div>
-        <button class="locate-btn" id="locateBtn" title="Моё местоположение" type="button">📍</button>
+        <button class="locate-btn" id="locateBtn" title="Моё местоположение" type="button" aria-label="Определить местоположение">📍</button>
       </div>
       <div class="header">
         <div class="city">
@@ -825,7 +896,7 @@
           </div>
           <div class="feels-like">Ощущается как ${Math.round(current.apparent_temperature)}°</div>
         </div>
-        <div class="weather-icon">${icon}</div>
+        <div class="weather-icon" role="img" aria-label="${desc}">${icon}</div>
       </div>
       <div class="details">
         <div class="detail-item">
@@ -858,10 +929,20 @@
           <div class="detail-value" style="font-size:15px">${sunset || '—'}</div>
           <div class="detail-label">Закат</div>
         </div>
+        <div class="detail-item">
+          <div class="detail-icon">☀️</div>
+          <div class="detail-value">${current.uv_index != null ? current.uv_index.toFixed(1) : '—'}</div>
+          <div class="detail-label">УФ-индекс</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-icon">🧭</div>
+          <div class="detail-value">${windDirection(current.wind_direction_10m)}</div>
+          <div class="detail-label">Направление ветра</div>
+        </div>
       </div>
       <div class="forecast-toggle" id="forecastToggle">
-        <button class="active" data-view="daily">На день</button>
-        <button data-view="hourly">Почасово</button>
+        <button class="active" data-view="daily" aria-pressed="true">На день</button>
+        <button data-view="hourly" aria-pressed="false">Почасово</button>
       </div>
       <div class="daily-container visible" id="dailyContainer">
         <div class="forecast-title">Прогноз на неделю</div>
@@ -886,8 +967,12 @@
       const btn = e.target.closest('button');
       if (!btn) return;
       const view = btn.dataset.view;
-      toggle.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+      toggle.querySelectorAll('button').forEach(b => {
+        b.classList.remove('active');
+        b.setAttribute('aria-pressed', 'false');
+      });
       btn.classList.add('active');
+      btn.setAttribute('aria-pressed', 'true');
       daily.classList.toggle('visible', view === 'daily');
       hourly.classList.toggle('visible', view === 'hourly');
     });
@@ -897,10 +982,10 @@
     app.innerHTML = `
       <div class="search-container">
         <div class="search-wrapper">
-          <input class="search-input" id="searchInput" type="text" placeholder="Поиск города..." autocomplete="off">
-          <div class="search-results" id="searchResults"></div>
+          <input class="search-input" id="searchInput" type="text" placeholder="Поиск города..." autocomplete="off" aria-label="Поиск города" role="combobox" aria-expanded="false" aria-controls="searchResults">
+          <div class="search-results" id="searchResults" role="listbox" aria-label="Результаты поиска"></div>
         </div>
-        <button class="locate-btn" id="locateBtn" title="Моё местоположение" type="button">📍</button>
+        <button class="locate-btn" id="locateBtn" title="Моё местоположение" type="button" aria-label="Определить местоположение">📍</button>
       </div>
       <div class="error">
         <div class="error-icon">😔</div>
@@ -914,10 +999,10 @@
     app.innerHTML = `
       <div class="search-container">
         <div class="search-wrapper">
-          <input class="search-input" id="searchInput" type="text" placeholder="Поиск города..." autocomplete="off">
-          <div class="search-results" id="searchResults"></div>
+          <input class="search-input" id="searchInput" type="text" placeholder="Поиск города..." autocomplete="off" aria-label="Поиск города" role="combobox" aria-expanded="false" aria-controls="searchResults">
+          <div class="search-results" id="searchResults" role="listbox" aria-label="Результаты поиска"></div>
         </div>
-        <button class="locate-btn" id="locateBtn" title="Моё местоположение" type="button">📍</button>
+        <button class="locate-btn" id="locateBtn" title="Моё местоположение" type="button" aria-label="Определить местоположение">📍</button>
       </div>
       <div class="loader">
         <div class="spinner"></div>
@@ -932,7 +1017,7 @@
       renderLoader();
       const params = new URLSearchParams({
         latitude: city.latitude, longitude: city.longitude,
-        current: 'temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,cloud_cover,surface_pressure',
+        current: 'temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,wind_direction_10m,cloud_cover,surface_pressure,uv_index',
         daily: 'weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_sum,precipitation_probability_max',
         hourly: 'temperature_2m,weather_code,precipitation_probability',
         timezone: city.timezone || 'Europe/Moscow',
@@ -978,6 +1063,7 @@
       const query = this.value.trim();
       if (query.length < 2) {
         results.classList.remove('visible');
+        input.setAttribute('aria-expanded', 'false');
         return;
       }
       searchTimeout = setTimeout(async () => {
@@ -989,18 +1075,20 @@
           return;
         }
         results.innerHTML = cities.map(c => `
-          <div class="search-result-item" data-lat="${c.latitude}" data-lon="${c.longitude}" data-tz="${c.timezone || ''}" data-name="${c.name}" data-country="${c.country || ''}">
+          <div class="search-result-item" role="option" data-lat="${c.latitude}" data-lon="${c.longitude}" data-tz="${c.timezone || ''}" data-name="${c.name}" data-country="${c.country || ''}">
             <div class="result-name">${c.name}</div>
             <div class="result-detail">${c.admin1 ? c.admin1 + ', ' : ''}${c.country || ''}</div>
           </div>
         `).join('');
         results.classList.add('visible');
+        input.setAttribute('aria-expanded', 'true');
       }, 300);
     });
 
     input.addEventListener('keydown', function(e) {
       if (e.key === 'Escape') {
         results.classList.remove('visible');
+        input.setAttribute('aria-expanded', 'false');
         this.blur();
       }
     });
@@ -1016,6 +1104,7 @@
         timezone: item.dataset.tz || 'Europe/Moscow'
       };
       results.classList.remove('visible');
+      input.setAttribute('aria-expanded', 'false');
       input.value = '';
       saveCity(selected);
       selectedCity = selected;
@@ -1025,6 +1114,7 @@
     document.addEventListener('click', function(e) {
       if (!e.target.closest('.search-wrapper')) {
         results.classList.remove('visible');
+        if (input) input.setAttribute('aria-expanded', 'false');
       }
     });
 
