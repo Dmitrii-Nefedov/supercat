@@ -1,4 +1,4 @@
-const CACHE = 'supercat-weather-v2';
+const CACHE = 'supercat-weather-v3';
 const STATIC_ASSETS = [
   '.',
   'index.html',

@@ -2,15 +2,28 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Прогноз погоды</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#302b63">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Погода">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="description" content="Красивый прогноз погоды. Температура, влажность, ветер, давление, УФ-индекс и почасовой прогноз на 24 часа.">
+<meta property="og:title" content="Прогноз погоды">
+<meta property="og:description" content="Красивый прогноз погоды. Температура, влажность, ветер, давление, УФ-индекс и почасовой прогноз на 24 часа.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://dmitrii-nefedov.github.io/supercat/">
+<link rel="canonical" href="https://dmitrii-nefedov.github.io/supercat/">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://api.open-meteo.com">
+<link rel="preconnect" href="https://geocoding-api.open-meteo.com">
+<link rel="dns-prefetch" href="https://api.open-meteo.com">
+<link rel="dns-prefetch" href="https://geocoding-api.open-meteo.com">
 <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='80'>🌤️</text></svg>">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
