@@ -33,10 +33,13 @@ from weather import (
     format_forecast_json,
     format_hourly_json,
     format_temp,
+    print_hourly,
     resolve_city,
     search_city,
     wind_direction,
 )
+
+from weather import _build_wx_params
 
 SAMPLE_CITY = City("Moscow", "Russia", 55.7558, 37.6173, "Europe/Moscow")
 
@@ -430,6 +433,50 @@ class TestJsonFormat:
         assert len(obj) == 6
         assert obj[0]["time"] == "2026-07-05T00:00"
         assert obj[0]["temperature"] == 20.0
+
+    def test_format_current_no_daily(self, mock_city):
+        data = {"current": {"temperature_2m": 22.5, "relative_humidity_2m": 55,
+                            "apparent_temperature": 20.0, "weather_code": 2,
+                            "wind_speed_10m": 12.0, "cloud_cover": 40}}
+        obj = format_current_json(data, mock_city)
+        assert obj["temperature"] == 22.5
+        assert "sunrise" not in obj
+        assert "forecast" not in obj
+
+    def test_format_current_no_sunrise_sunset(self, mock_city):
+        data = {"current": {"temperature_2m": 22.5, "relative_humidity_2m": 55,
+                            "apparent_temperature": 20.0, "weather_code": 2,
+                            "wind_speed_10m": 12.0, "cloud_cover": 40},
+                "daily": {"time": [], "sunrise": [], "sunset": []}}
+        obj = format_current_json(data, mock_city)
+        assert "sunrise" not in obj
+
+    def test_format_current_missing_optionals(self, mock_city):
+        data = {"current": {"temperature_2m": 22.5, "relative_humidity_2m": 55,
+                            "apparent_temperature": 20.0, "weather_code": 2,
+                            "wind_speed_10m": 12.0, "cloud_cover": 40}}
+        obj = format_current_json(data, mock_city)
+        assert obj["wind_gusts"] is None
+        assert obj["wind_direction"] is None
+        assert obj["pressure"] is None
+        assert obj["uv_index"] is None
+
+    def test_format_forecast_missing_optionals(self):
+        data = {"daily": {
+            "time": ["2026-07-05"],
+            "weather_code": [0],
+            "temperature_2m_max": [25.0],
+            "temperature_2m_min": [15.0],
+        }}
+        obj = format_forecast_json(data)
+        assert obj[0]["precipitation_probability_max"] is None
+        assert obj[0]["uv_index_max"] is None
+
+    def test_format_hourly_missing_wind_direction(self, sample_hourly_response):
+        data = dict(sample_hourly_response)
+        del data["hourly"]["wind_direction_10m"]
+        obj = format_hourly_json(data)
+        assert obj[0]["wind_direction"] is None
 
 
 # --- CLI commands ---
@@ -834,3 +881,215 @@ class TestMainEdgeCases:
             with pytest.raises(SystemExit) as exc:
                 main()
             assert exc.value.code == 0
+
+
+# --- _build_wx_params ---
+
+
+class TestBuildWxParams:
+    def test_default_params(self, mock_city):
+        params = _build_wx_params(mock_city)
+        assert params["latitude"] == 55.7558
+        assert params["longitude"] == 37.6173
+        assert "current" in params
+        assert "daily" in params
+        assert params["timezone"] == "Europe/Moscow"
+        assert params["forecast_days"] == 7
+        assert "hourly" not in params
+
+    def test_hourly_mode(self, mock_city):
+        params = _build_wx_params(mock_city, hourly=True)
+        assert params["forecast_hours"] == 48
+        assert params["forecast_days"] == 1
+
+    def test_hourly_fields(self, mock_city):
+        params = _build_wx_params(mock_city, hourly=True)
+        hourly_fields = params["hourly"]
+        assert "temperature_2m" in hourly_fields
+        assert "precipitation" in hourly_fields
+        assert "weather_code" in hourly_fields
+        assert "wind_speed_10m" in hourly_fields
+        assert "wind_direction_10m" in hourly_fields
+
+    def test_uv_index_in_current(self, mock_city):
+        params = _build_wx_params(mock_city)
+        assert "uv_index" in params["current"]
+
+    def test_uv_index_max_in_daily(self, mock_city):
+        params = _build_wx_params(mock_city)
+        assert "uv_index_max" in params["daily"]
+
+
+# --- print_hourly output ---
+
+
+class TestPrintHourly:
+    SAMPLE = {
+        "hourly": {
+            "time": [f"2026-07-05T{h:02d}:00" for h in range(12)],
+            "temperature_2m": [20.0, 21.0, 22.0, 23.0, 24.0, 25.0,
+                               26.0, 27.0, 28.0, 29.0, 30.0, 31.0],
+            "precipitation": [0.5, 0.0, 0.0, 0.0, 1.2, 0.0,
+                              0.0, 0.0, 0.0, 0.3, 0.0, 0.0],
+            "weather_code": [0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3],
+            "wind_speed_10m": [5.0, 6.0, 7.0, 8.0, 9.0, 10.0,
+                               11.0, 12.0, 13.0, 14.0, 15.0, 16.0],
+            "wind_direction_10m": [0.0, 45.0, 90.0, 135.0, 180.0, 225.0,
+                                   270.0, 315.0, 360.0, 22.5, 67.5, 112.5],
+        }
+    }
+
+    def test_title_includes_city(self):
+        with patch("sys.stdout", new_callable=StringIO) as buf:
+            print_hourly(self.SAMPLE, SAMPLE_CITY)
+            output = buf.getvalue()
+            assert "Moscow" in output
+            assert "48-Hour Forecast" in output
+
+    def test_time_labels(self):
+        with patch("sys.stdout", new_callable=StringIO) as buf:
+            print_hourly(self.SAMPLE, SAMPLE_CITY)
+            output = buf.getvalue()
+            assert "00:00" in output
+            assert "03:00" in output
+            assert "06:00" in output
+
+    def test_temperatures(self):
+        with patch("sys.stdout", new_callable=StringIO) as buf:
+            print_hourly(self.SAMPLE, SAMPLE_CITY)
+            output = buf.getvalue()
+            assert "20" in output
+            assert "23" in output
+            assert "26" in output
+
+    def test_nonzero_precip_shown(self):
+        with patch("sys.stdout", new_callable=StringIO) as buf:
+            print_hourly(self.SAMPLE, SAMPLE_CITY)
+            output = buf.getvalue()
+            assert "0.5" in output
+            assert "mm" in output or "㎜" in output
+
+    def test_zero_precip_skipped(self):
+        sample = {
+            "hourly": {
+                "time": ["2026-07-05T00:00", "2026-07-05T03:00", "2026-07-05T06:00"],
+                "temperature_2m": [20.0, 21.0, 22.0],
+                "precipitation": [0.0, 0.0, 0.0],
+                "weather_code": [0, 0, 0],
+                "wind_speed_10m": [5.0, 6.0, 7.0],
+                "wind_direction_10m": [0.0, 45.0, 90.0],
+            }
+        }
+        with patch("sys.stdout", new_callable=StringIO) as buf:
+            print_hourly(sample, SAMPLE_CITY)
+            output = buf.getvalue()
+            assert "0.0mm" not in output
+
+    def test_wind_speed(self):
+        with patch("sys.stdout", new_callable=StringIO) as buf:
+            print_hourly(self.SAMPLE, SAMPLE_CITY)
+            output = buf.getvalue()
+            assert "5km/h" in output or "5 km/h" in output or "5.0" in output
+
+    def test_wind_direction(self):
+        with patch("sys.stdout", new_callable=StringIO) as buf:
+            print_hourly(self.SAMPLE, SAMPLE_CITY)
+            output = buf.getvalue()
+            assert "\u0421" in output
+
+    def test_missing_direction_graceful(self):
+        sample = {
+            "hourly": {
+                "time": ["2026-07-05T00:00", "2026-07-05T03:00", "2026-07-05T06:00"],
+                "temperature_2m": [20.0, 21.0, 22.0],
+                "precipitation": [0.0, 0.0, 0.0],
+                "weather_code": [0, 0, 0],
+                "wind_speed_10m": [5.0, 6.0, 7.0],
+            }
+        }
+        with patch("sys.stdout", new_callable=StringIO) as buf:
+            print_hourly(sample, SAMPLE_CITY)
+            output = buf.getvalue()
+            assert "km/h" in output
+
+
+# --- cmd_hourly dispatch ---
+
+
+class TestCmdHourly:
+    @patch("weather.resolve_city")
+    @patch("weather.fetch_weather")
+    def test_text_dispatch(self, mock_fetch, mock_resolve):
+        mock_resolve.return_value = SAMPLE_CITY
+        mock_fetch.return_value = {"current": {}, "hourly": {"time": []}}
+        with patch("weather.print_current") as mock_print_cur:
+            with patch("weather.print_hourly") as mock_print_hr:
+                args = argparse.Namespace(city="Moscow", format="text")
+                cmd_hourly(args)
+                mock_fetch.assert_called_once_with(SAMPLE_CITY, hourly=True)
+                mock_print_cur.assert_called_once()
+                mock_print_hr.assert_called_once()
+
+    @patch("weather.resolve_city")
+    @patch("weather.fetch_weather")
+    def test_json_output(self, mock_fetch, mock_resolve, sample_hourly_response):
+        mock_resolve.return_value = SAMPLE_CITY
+        mock_fetch.return_value = sample_hourly_response
+        with patch("sys.stdout", new_callable=StringIO) as buf:
+            args = argparse.Namespace(city="Moscow", format="json")
+            cmd_hourly(args)
+            output = buf.getvalue()
+            parsed = json.loads(output)
+            assert "hourly" in parsed
+            assert "location" in parsed
+            assert parsed["location"]["name"] == "Moscow"
+
+    @patch("weather.resolve_city")
+    def test_city_not_found(self, mock_resolve):
+        mock_resolve.side_effect = CityNotFoundError("City not found: Xyzzy")
+        with patch("sys.stderr", new_callable=StringIO) as buf:
+            with pytest.raises(SystemExit):
+                args = argparse.Namespace(city="Xyzzy", format="text")
+                cmd_hourly(args)
+            assert "City not found" in buf.getvalue()
+
+
+# --- main() ApiError handling ---
+
+
+class TestMainApiError:
+    def test_main_catches_api_error_from_current(self):
+        from weather import main
+        with patch("weather.cmd_current", side_effect=ApiError("HTTP 500: timeout")):
+            with patch.object(sys, "argv", ["weather.py", "now", "Moscow"]):
+                with patch("sys.stderr", new_callable=StringIO) as buf:
+                    with pytest.raises(SystemExit):
+                        main()
+                    assert "API Error" in buf.getvalue()
+
+    def test_main_catches_api_error_from_forecast(self):
+        from weather import main
+        with patch("weather.cmd_forecast", side_effect=ApiError("HTTP 500: timeout")):
+            with patch.object(sys, "argv", ["weather.py", "forecast", "Moscow"]):
+                with patch("sys.stderr", new_callable=StringIO) as buf:
+                    with pytest.raises(SystemExit):
+                        main()
+                    assert "API Error" in buf.getvalue()
+
+    def test_main_catches_api_error_from_hourly(self):
+        from weather import main
+        with patch("weather.cmd_hourly", side_effect=ApiError("HTTP 500: timeout")):
+            with patch.object(sys, "argv", ["weather.py", "hourly", "Moscow"]):
+                with patch("sys.stderr", new_callable=StringIO) as buf:
+                    with pytest.raises(SystemExit):
+                        main()
+                    assert "API Error" in buf.getvalue()
+
+    def test_main_catches_api_error_from_search(self):
+        from weather import main
+        with patch("weather.cmd_search", side_effect=ApiError("HTTP 500: timeout")):
+            with patch.object(sys, "argv", ["weather.py", "search", "Moscow"]):
+                with patch("sys.stderr", new_callable=StringIO) as buf:
+                    with pytest.raises(SystemExit):
+                        main()
+                    assert "API Error" in buf.getvalue()
