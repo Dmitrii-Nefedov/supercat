@@ -155,7 +155,8 @@
     border-radius: 0 0 16px 16px;
   }
 
-  .search-result-item:hover {
+  .search-result-item:hover,
+  .search-result-item.highlighted {
     background: rgba(255, 255, 255, 0.1);
   }
 
@@ -1241,6 +1242,7 @@
         <span class="control-separator"></span>
         <button class="theme-toggle${currentTheme === 'light' ? ' active' : ''}" data-theme="light">☀️</button>
         <button class="theme-toggle${currentTheme === 'dark' ? ' active' : ''}" data-theme="dark">🌙</button>
+        <button class="refresh-btn" id="refreshBtn" title="Обновить" type="button" aria-label="Обновить прогноз">🔄</button>
       </div>
       <div class="header">
         <div class="city">
@@ -1269,6 +1271,7 @@
         <div class="detail-item">
           <div class="detail-icon">💨</div>
           <div class="detail-value">${Math.round(current.wind_speed_10m)} <span style="font-size:12px;font-weight:300">км/ч</span></div>
+          ${current.wind_gusts_10m != null ? `<div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:2px">порывы ${Math.round(current.wind_gusts_10m)} км/ч</div>` : ''}
           <div class="detail-label">Ветер</div>
         </div>
         <div class="detail-item">
@@ -1320,6 +1323,7 @@
     bindForecastToggle();
     bindUnitToggle();
     bindThemeToggle();
+    bindRefreshBtn();
   }
 
   function bindUnitToggle() {
@@ -1429,7 +1433,7 @@
       showLoadingBar();
       const params = new URLSearchParams({
         latitude: city.latitude, longitude: city.longitude,
-        current: 'temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,wind_direction_10m,cloud_cover,surface_pressure,uv_index',
+        current: 'temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m,cloud_cover,surface_pressure,uv_index',
         daily: 'weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_sum,precipitation_probability_max,uv_index_max',
         hourly: 'temperature_2m,weather_code,precipitation_probability',
         timezone: city.timezone || 'Europe/Moscow',
@@ -1464,6 +1468,14 @@
     } catch {
       return [];
     }
+  }
+
+  function bindRefreshBtn() {
+    const btn = document.getElementById('refreshBtn');
+    if (!btn) return;
+    btn.addEventListener('click', function() {
+      fetchWeather(selectedCity);
+    });
   }
 
   function bindSearchUI(city) {
@@ -1511,11 +1523,11 @@
       results.classList.remove('visible');
       input.setAttribute('aria-expanded', 'false');
       input.value = '';
+      highlightIndex = -1;
       saveCity(selected);
       selectedCity = selected;
       fetchWeather(selected);
     }
-
     input.addEventListener('keydown', function(e) {
       if (e.key === 'Escape') {
         results.classList.remove('visible');

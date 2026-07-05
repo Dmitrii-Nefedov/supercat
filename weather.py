@@ -87,7 +87,7 @@ def fetch_weather(city: City) -> dict[str, Any]:
     params = {
         "latitude": city.latitude,
         "longitude": city.longitude,
-        "current": "temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,cloud_cover,surface_pressure",
+        "current": "temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m,cloud_cover,surface_pressure,uv_index",
         "daily": "weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_sum,precipitation_probability_max",
         "timezone": city.timezone,
         "forecast_days": 7,
@@ -102,6 +102,14 @@ def day_name(date_str: str, index: int) -> str:
         return "Tomorrow"
     dt = datetime.strptime(date_str, "%Y-%m-%d")
     return dt.strftime("%a")
+
+
+def wind_direction(degrees: float | None) -> str:
+    if degrees is None:
+        return "—"
+    dirs = ["С", "ССВ", "СВ", "ВСВ", "В", "ВЮВ", "ЮВ", "ЮЮВ",
+            "Ю", "ЮЮЗ", "ЮЗ", "ЗЮЗ", "З", "ЗСЗ", "СЗ", "ССЗ"]
+    return dirs[round(degrees / 22.5) % 16]
 
 
 def color_temp(temp: float) -> str:
@@ -124,16 +132,21 @@ def print_current(data: dict[str, Any], city: City) -> None:
     feels = cur["apparent_temperature"]
     humid = cur["relative_humidity_2m"]
     wind = cur["wind_speed_10m"]
+    gusts = cur.get("wind_gusts_10m")
+    wind_dir = cur.get("wind_direction_10m")
     cloud = cur["cloud_cover"]
     pressure = cur.get("surface_pressure")
+    uv = cur.get("uv_index")
 
     location = f"{city.name}, {city.country}" if city.country else city.name
     header = f"{BOLD}{icon}  {location}{RESET}"
     print(f"\n  {header}")
     print(f"  {DIM}{'=' * 40}{RESET}")
     print(f"  {color_temp(temp)}\u00b0C   {desc}")
-    print(f"  {DIM}Feels like{RESET} {color_temp(feels)}\u00b0C")
-    print(f"  {DIM}Humidity{RESET}    {humid}%   {DIM}Wind{RESET}  {wind:.0f} km/h   {DIM}Clouds{RESET}  {cloud}%")
+    print(f"  {DIM}Feels like{RESET} {color_temp(feels)}\u00b0C   {DIM}UV{RESET} {uv if uv is not None else '—'}")
+    gust_str = f"  gusts {gusts:.0f} km/h" if gusts is not None else ""
+    dir_str = f" {wind_direction(wind_dir)}" if wind_dir is not None else ""
+    print(f"  {DIM}Humidity{RESET}    {humid}%   {DIM}Wind{RESET}  {wind:.0f} km/h{gust_str}{dir_str}   {DIM}Clouds{RESET}  {cloud}%")
     if pressure is not None:
         print(f"  {DIM}Pressure{RESET}   {pressure:.0f} hPa")
 
