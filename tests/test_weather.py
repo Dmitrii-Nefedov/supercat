@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 import sys
+from io import StringIO
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 
@@ -488,7 +490,252 @@ class TestCliParsing:
                 main()
             mock_cmd.assert_called_once()
 
-    def test_no_args_exits(self):
+
+# --- cmd_search output ---
+
+
+class TestCmdSearch:
+    def test_cmd_search_shows_results(self):
+        from weather import cmd_search
+        cities = [
+            City("Moscow", "Russia", 55.7558, 37.6173, "Europe/Moscow"),
+            City("Moscow", "USA", 46.7320, -117.0000, "America/Los_Angeles"),
+        ]
+        with patch("weather.search_city", return_value=cities):
+            with patch("sys.stdout", new_callable=StringIO) as buf:
+                args = argparse.Namespace(query="Moscow", format="text")
+                cmd_search(args)
+                output = buf.getvalue()
+                assert "Moscow" in output
+                assert "Russia" in output
+                assert "USA" in output
+                assert "55.76" in output
+
+    def test_cmd_search_no_results(self):
+        from weather import cmd_search
+        with patch("weather.search_city", return_value=[]):
+            with patch("sys.stdout", new_callable=StringIO) as buf:
+                args = argparse.Namespace(query="Xyzzy", format="text")
+                cmd_search(args)
+                output = buf.getvalue()
+                assert "No results" in output or "Xyzzy" in output
+
+
+# --- print_current output ---
+
+
+class TestPrintCurrent:
+    SAMPLE_DATA = {
+        "current": {
+            "temperature_2m": 22.5,
+            "apparent_temperature": 20.1,
+            "relative_humidity_2m": 55,
+            "weather_code": 0,
+            "wind_speed_10m": 12.3,
+            "wind_gusts_10m": 18.5,
+            "wind_direction_10m": 180,
+            "cloud_cover": 30,
+            "surface_pressure": 1013.2,
+            "uv_index": 4.2,
+        },
+        "daily": {
+            "sunrise": ["2026-07-05T05:30:00"],
+            "sunset": ["2026-07-05T21:15:00"],
+        },
+    }
+
+    def test_prints_city_name(self):
+        from weather import print_current
+        with patch("sys.stdout", new_callable=StringIO) as buf:
+            print_current(self.SAMPLE_DATA, SAMPLE_CITY)
+            output = buf.getvalue()
+            assert "Moscow" in output
+            assert "Russia" in output
+
+    def test_prints_temperature(self):
+        from weather import print_current
+        with patch("sys.stdout", new_callable=StringIO) as buf:
+            print_current(self.SAMPLE_DATA, SAMPLE_CITY)
+            output = buf.getvalue()
+            assert "22" in output
+            assert "°C" in output
+
+    def test_prints_humidity(self):
+        from weather import print_current
+        with patch("sys.stdout", new_callable=StringIO) as buf:
+            print_current(self.SAMPLE_DATA, SAMPLE_CITY)
+            output = buf.getvalue()
+            assert "55%" in output
+
+    def test_prints_sunrise_sunset(self):
+        from weather import print_current
+        with patch("sys.stdout", new_callable=StringIO) as buf:
+            print_current(self.SAMPLE_DATA, SAMPLE_CITY)
+            output = buf.getvalue()
+            assert "05:30" in output
+            assert "21:15" in output
+
+    def test_prints_wind_gusts(self):
+        from weather import print_current
+        with patch("sys.stdout", new_callable=StringIO) as buf:
+            print_current(self.SAMPLE_DATA, SAMPLE_CITY)
+            output = buf.getvalue()
+            assert "gusts" in output
+            assert "18" in output
+
+    def test_no_sunrise_sunset_when_missing(self):
+        from weather import print_current
+        data = dict(self.SAMPLE_DATA)
+        data["daily"] = {}
+        with patch("sys.stdout", new_callable=StringIO) as buf:
+            print_current(data, SAMPLE_CITY)
+            output = buf.getvalue()
+            assert "Sunrise" not in output
+            assert "Sunset" not in output
+
+    def test_no_pressure_when_missing(self):
+        from weather import print_current
+        data = dict(self.SAMPLE_DATA)
+        del data["current"]["surface_pressure"]
+        with patch("sys.stdout", new_callable=StringIO) as buf:
+            print_current(data, SAMPLE_CITY)
+            output = buf.getvalue()
+            assert "Pressure" not in output
+
+    def test_no_gusts_when_missing(self):
+        from weather import print_current
+        data = dict(self.SAMPLE_DATA)
+        data["current"] = dict(data["current"])
+        del data["current"]["wind_gusts_10m"]
+        with patch("sys.stdout", new_callable=StringIO) as buf:
+            print_current(data, SAMPLE_CITY)
+            output = buf.getvalue()
+            assert "gusts" not in output
+
+
+# --- print_forecast output ---
+
+
+class TestPrintForecast:
+    SAMPLE_FORECAST = {
+        "daily": {
+            "time": ["2026-07-05", "2026-07-06", "2026-07-07", "2026-07-08",
+                     "2026-07-09", "2026-07-10", "2026-07-11"],
+            "weather_code": [0, 1, 2, 3, 45, 61, 95],
+            "temperature_2m_max": [28, 25, 22, 20, 18, 15, 12],
+            "temperature_2m_min": [18, 16, 14, 12, 10, 8, 6],
+            "precipitation_probability_max": [10, 20, 30, 40, 50, 60, 70],
+        }
+    }
+
+    def test_prints_forecast_title(self):
+        from weather import print_forecast
+        with patch("sys.stdout", new_callable=StringIO) as buf:
+            print_forecast(self.SAMPLE_FORECAST)
+            output = buf.getvalue()
+            assert "7-Day Forecast" in output
+
+    def test_prints_all_days(self):
+        from weather import print_forecast
+        with patch("sys.stdout", new_callable=StringIO) as buf:
+            print_forecast(self.SAMPLE_FORECAST)
+            output = buf.getvalue()
+            assert "Today" in output
+            assert "Tomorrow" in output
+
+    def test_prints_temperatures(self):
+        from weather import print_forecast
+        with patch("sys.stdout", new_callable=StringIO) as buf:
+            print_forecast(self.SAMPLE_FORECAST)
+            output = buf.getvalue()
+            assert "28" in output
+            assert "12" in output
+
+    def test_prints_precipitation(self):
+        from weather import print_forecast
+        with patch("sys.stdout", new_callable=StringIO) as buf:
+            print_forecast(self.SAMPLE_FORECAST)
+            output = buf.getvalue()
+            assert "10%" in output
+            assert "70%" in output
+
+    def test_no_precip_when_missing(self):
+        from weather import print_forecast
+        data = {"daily": {
+            "time": ["2026-07-05"],
+            "weather_code": [0],
+            "temperature_2m_max": [25],
+            "temperature_2m_min": [15],
+        }}
+        with patch("sys.stdout", new_callable=StringIO) as buf:
+            print_forecast(data)
+            output = buf.getvalue()
+            assert "💧" not in output
+
+
+# --- cmd_current dispatch ---
+
+
+class TestCmdCurrent:
+    @patch("weather.resolve_city")
+    @patch("weather.fetch_weather")
+    def test_cmd_current_calls_print(self, mock_fetch, mock_resolve):
+        mock_resolve.return_value = SAMPLE_CITY
+        mock_fetch.return_value = {"current": {"temperature_2m": 22.5, "weather_code": 0}}
+        with patch("weather.print_current") as mock_print:
+            args = argparse.Namespace(city="Moscow", format="text")
+            cmd_current(args)
+            mock_fetch.assert_called_once_with(SAMPLE_CITY)
+            mock_print.assert_called_once()
+
+    @patch("weather.resolve_city")
+    def test_cmd_current_city_not_found(self, mock_resolve):
+        mock_resolve.side_effect = CityNotFoundError("City not found: Xyzzy")
+        with patch("sys.stderr", new_callable=StringIO) as buf:
+            with pytest.raises(SystemExit):
+                args = argparse.Namespace(city="Xyzzy", format="text")
+                cmd_current(args)
+            assert "City not found" in buf.getvalue()
+
+
+# --- cmd_forecast dispatch ---
+
+
+class TestCmdForecast:
+    @patch("weather.resolve_city")
+    @patch("weather.fetch_weather")
+    def test_cmd_forecast_calls_print(self, mock_fetch, mock_resolve):
+        mock_resolve.return_value = SAMPLE_CITY
+        mock_fetch.return_value = {"current": {}, "daily": {}}
+        with patch("weather.print_current") as mock_print_cur:
+            with patch("weather.print_forecast") as mock_print_fc:
+                args = argparse.Namespace(city="Moscow", format="text")
+                cmd_forecast(args)
+                mock_fetch.assert_called_once_with(SAMPLE_CITY)
+                mock_print_cur.assert_called_once()
+                mock_print_fc.assert_called_once()
+
+    @patch("weather.resolve_city")
+    def test_cmd_forecast_city_not_found(self, mock_resolve):
+        mock_resolve.side_effect = CityNotFoundError("City not found: Xyzzy")
+        with patch("sys.stderr", new_callable=StringIO) as buf:
+            with pytest.raises(SystemExit):
+                args = argparse.Namespace(city="Xyzzy", format="text")
+                cmd_forecast(args)
+            assert "City not found" in buf.getvalue()
+
+
+# --- main() edge cases ---
+
+
+class TestMainEdgeCases:
+    def test_main_invalid_command(self):
+        from weather import main
+        with patch.object(sys, "argv", ["weather.py", "invalid_cmd"]):
+            with pytest.raises(SystemExit):
+                main()
+
+    def test_main_no_args(self):
         from weather import main
         with patch.object(sys, "argv", ["weather.py"]):
             with pytest.raises(SystemExit):

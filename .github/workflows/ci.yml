@@ -58,6 +58,10 @@ with open('sw.js') as f:
         if: hashFiles('tests/test_weather.js') != ''
         run: node tests/test_weather.js
 
+      - name: Run service worker tests
+        if: hashFiles('tests/test_sw.js') != ''
+        run: node tests/test_sw.js
+
   lint:
     runs-on: ubuntu-latest
     steps:
