@@ -25,6 +25,14 @@ DevOps engineering documentation for the Supercat Weather PWA.
   - HTML5 validation (via `html5validator-action`) with CSS checks
   - JSON syntax validation (all `.json` files)
   - Service worker integrity check (lifecycle events present)
+  - Content-Security-Policy validation (required directives present in `index.html`)
+  - Python tests (`tests/test_weather.py`) with pytest
+  - JavaScript unit tests (`tests/test_weather.js`) — pure function tests
+  - Service worker unit tests (`tests/test_sw.js`) — cache strategy, URL routing, static asset coverage
+### Test Suites
+- **`tests/test_weather.py`** — 60 Python tests covering CLI commands, API mocking, WMO mappings, JSON formatting
+- **`tests/test_weather.js`** — 37 JS tests covering temperature conversion, wind direction, UV index, WMO icons, day names
+- **`tests/test_sw.js`** — 16 SW tests covering cache configuration, lifecycle events, fetch strategy, navigation routing, cache cleanup
 
 ### Dependency Automation
 - **File**: `.github/dependabot.yml`
@@ -60,8 +68,9 @@ No external monitoring is configured for this static site. Recommended additions
 
 - **File**: `sw.js`
 - **Strategy**: Cache-first for static assets, network-first for API calls
-- **Cache**: Named `supercat-weather-v3`
+- **Cache**: Named `supercat-weather-v4`
 - **Lifecycle**: `install` → `activate` (clean old caches) → `fetch`
+- **Tests**: `tests/test_sw.js` — validates cache configuration, URL routing, lifecycle events, and fallback behavior (16 tests)
 
 ## Incident Response
 
@@ -78,7 +87,15 @@ Priority levels for the Supercat Weather app:
 
 - **No secrets in repo**: Open-Meteo is keyless; zero credentials stored.
 - **HTTPS enforced**: GitHub Pages enforces TLS 1.2+ automatically.
-- **Content Security Policy**: Not yet configured — recommended addition.
+- **Content Security Policy**: Configured via `<meta>` tag in `index.html`. Restricts:
+  - `default-src 'self'` — all resources default to same origin
+  - `style-src` — allows Google Fonts stylesheets + inline styles (`'unsafe-inline'`)
+  - `font-src` — allows Google Fonts CDN
+  - `connect-src` — allows Open-Meteo API endpoints only
+  - `img-src` — same-origin + `data:` URIs
+  - `script-src` — same-origin + inline scripts (`'unsafe-inline'`)
+  - `manifest-src` — same-origin
+  - Validated in CI via `Check Content-Security-Policy` step
 - **Dependency updates**: Automated via Dependabot (Actions runners only).
 
 ## Tooling
@@ -105,4 +122,4 @@ gh workflow run "Deploy to GitHub Pages" --repo Dmitrii-Nefedov/supercat
 
 ---
 
-*Maintained by DevOps — last updated 2026-07-05 (Run 8)
+*Maintained by DevOps — last updated 2026-07-05 (Run 10)

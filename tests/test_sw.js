@@ -1,4 +1,5 @@
 // Service worker unit tests for sw.js
+// Tests core SW logic: caching strategy, URL routing, static asset coverage
 // Run: node tests/test_sw.js
 
 const assert = {
@@ -134,6 +135,31 @@ function loadSW() {
   return context;
 }
 
+// ---------- Static analysis helpers ----------
+
+function isAPIRequest(url) {
+  const API_ORIGINS = ['api.open-meteo.com', 'geocoding-api.open-meteo.com'];
+  return API_ORIGINS.some(function(origin) { return url.indexOf(origin) !== -1; });
+}
+
+const swPath = path.join(__dirname, '..', 'sw.js');
+const swCode = fs.readFileSync(swPath, 'utf-8');
+
+function extractArray(name) {
+  const re = new RegExp("const\\s+" + name + "\\s*=\\s*\\[([^\\]]+)\\]");
+  const m = swCode.match(re);
+  if (!m) return [];
+  return m[1].split(',').map(function(s) {
+    return s.trim().replace(/^['"]|['"]$/g, '');
+  }).filter(Boolean);
+}
+
+function extractStringConst(name) {
+  const re = new RegExp("const\\s+" + name + "\\s*=\\s*'([^']+)'");
+  const m = swCode.match(re);
+  return m ? m[1] : null;
+}
+
 // ---------- Test Runner ----------
 
 let passed = 0;
@@ -145,11 +171,11 @@ function test(name, fn) {
     passed++;
   } catch (e) {
     failed++;
-    console.error(`  ✗ ${name}: ${e.message}`);
+    console.error(`  \u2717 ${name}: ${e.message}`);
   }
 }
 
-// ---------- Tests ----------
+// ---------- Behavioral Tests (via VM sandbox) ----------
 
 console.log('\n  sw.js — Install Event');
 test('install event listener is registered', () => {
@@ -199,7 +225,7 @@ test('activate deletes old caches', async () => {
   assert.ok(deletedCacheKeys.includes('old-cache-v1'), 'should delete old cache v1');
 });
 
-test('activate does not delete current cache', async () => {
+test('activate preserves current caches', async () => {
   const ctx = loadSW();
   const activateHandler = ctx.self._listeners.activate[0];
 
@@ -213,7 +239,10 @@ test('activate does not delete current cache', async () => {
   activateHandler(event);
   await waitUntilArgs;
 
-  assert.ok(!deletedCacheKeys.includes('supercat-weather-v3'), 'should NOT delete current cache v3');
+  const currentCache = extractStringConst('CACHE');
+  const apiCache = extractStringConst('API_CACHE');
+  assert.ok(!deletedCacheKeys.includes(currentCache), 'should NOT delete current static cache');
+  assert.ok(!deletedCacheKeys.includes(apiCache), 'should NOT delete current API cache');
 });
 
 console.log('  sw.js — Fetch Event (navigate)');
@@ -374,7 +403,141 @@ test('non-navigate does not cache cross-origin responses', async () => {
   assert.ok(cachePutArgs === null, 'cache.put should NOT be called for cross-origin');
 });
 
+test('non-navigate does not cache non-ok responses', async () => {
+  const ctx = loadSW();
+  const fetchHandler = ctx.self._listeners.fetch[0];
+
+  resetMocks();
+  const request = new MockRequest('https://example.com/notfound', { mode: 'no-cors' });
+  cacheMatchResult = null;
+  fetchResponse = new MockResponse('not found', { ok: false, status: 404 });
+
+  const event = {
+    request,
+    respondWith(fn) {
+      respondWithArgs = fn;
+    },
+  };
+
+  fetchHandler(event);
+  await respondWithArgs;
+
+  assert.ok(cachePutArgs === null, 'cache.put should NOT be called for non-ok responses');
+});
+
+console.log('  sw.js — API Request handling');
+test('API request uses network-first strategy', async () => {
+  const ctx = loadSW();
+  const fetchHandler = ctx.self._listeners.fetch[0];
+
+  resetMocks();
+  const request = new MockRequest('https://api.open-meteo.com/v1/forecast', { mode: 'cors' });
+  fetchResponse = new MockResponse('{"weather": "data"}', { ok: true });
+
+  const event = {
+    request,
+    respondWith(fn) {
+      respondWithArgs = fn;
+    },
+  };
+
+  fetchHandler(event);
+  const result = await respondWithArgs;
+
+  assert.strictEqual(result.body, '{"weather": "data"}');
+  assert.ok(cachePutArgs !== null, 'successful API response should be cached');
+});
+
+test('API request failure returns cached response', async () => {
+  const ctx = loadSW();
+  const fetchHandler = ctx.self._listeners.fetch[0];
+
+  resetMocks();
+  const request = new MockRequest('https://api.open-meteo.com/v1/forecast', { mode: 'cors' });
+  fetchError = new Error('Network failure');
+  cacheMatchResult = new MockResponse('{"weather": "cached"}', { ok: true });
+
+  const event = {
+    request,
+    respondWith(fn) {
+      respondWithArgs = fn;
+    },
+  };
+
+  fetchHandler(event);
+  const result = await respondWithArgs;
+
+  assert.strictEqual(result.body, '{"weather": "cached"}');
+});
+
+test('API request failure with no cache returns offline error JSON', async () => {
+  const ctx = loadSW();
+  const fetchHandler = ctx.self._listeners.fetch[0];
+
+  resetMocks();
+  const request = new MockRequest('https://api.open-meteo.com/v1/forecast', { mode: 'cors' });
+  fetchError = new Error('Network failure');
+  cacheMatchResult = null;
+
+  const event = {
+    request,
+    respondWith(fn) {
+      respondWithArgs = fn;
+    },
+  };
+
+  fetchHandler(event);
+  const result = await respondWithArgs;
+
+  assert.ok(result.body.includes('error'), 'should return error JSON');
+  assert.ok(result.body.includes('Нет подключения'), 'should contain offline message in Russian');
+});
+
+// ---------- Static Analysis Tests ----------
+
+console.log('  SW: Cache constants');
+test('CACHE name starts with supercat-weather', function() {
+  const cache = extractStringConst('CACHE');
+  assert.ok(cache, 'CACHE constant missing');
+  assert.ok(cache.startsWith('supercat-weather'), 'CACHE should start with "supercat-weather"');
+});
+
+test('API_CACHE name is defined', function() {
+  const cache = extractStringConst('API_CACHE');
+  assert.ok(cache, 'API_CACHE constant missing');
+});
+
+test('STATIC_ASSETS includes required files', function() {
+  const assets = extractArray('STATIC_ASSETS');
+  assert.ok(assets.indexOf('.') !== -1, 'Missing root "."');
+  assert.ok(assets.indexOf('index.html') !== -1, 'Missing index.html');
+  assert.ok(assets.indexOf('manifest.json') !== -1, 'Missing manifest.json');
+  assert.ok(assets.indexOf('404.html') !== -1, 'Missing 404.html');
+  assert.ok(assets.length >= 4, 'Expected at least 4 static assets');
+});
+
+test('API_ORIGINS includes both Open-Meteo endpoints', function() {
+  const origins = extractArray('API_ORIGINS');
+  assert.ok(origins.indexOf('api.open-meteo.com') !== -1, 'Missing api.open-meteo.com');
+  assert.ok(origins.indexOf('geocoding-api.open-meteo.com') !== -1, 'Missing geocoding-api.open-meteo.com');
+  assert.strictEqual(origins.length, 2, 'Expected exactly 2 API origins');
+});
+
+console.log('  SW: Fetch strategy helpers');
+test('isAPIRequest matches api.open-meteo.com', function() {
+  assert.ok(isAPIRequest('https://api.open-meteo.com/v1/forecast'));
+  assert.ok(!isAPIRequest('https://example.com/api'));
+});
+
+test('isAPIRequest matches geocoding-api.open-meteo.com', function() {
+  assert.ok(isAPIRequest('https://geocoding-api.open-meteo.com/v1/search'));
+});
+
+test('isAPIRequest rejects own origin', function() {
+  assert.ok(!isAPIRequest('https://dmitrii-nefedov.github.io/supercat/index.html'));
+});
+
 // ---------- Summary ----------
 
-console.log(`\n  Results: ${passed} passed, ${failed} failed, ${passed + failed} total\n`);
+console.log('\n  Results: ' + passed + ' passed, ' + failed + ' failed, ' + (passed + failed) + ' total\n');
 process.exit(failed > 0 ? 1 : 0);

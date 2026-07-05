@@ -48,6 +48,24 @@ with open('sw.js') as f:
     print('sw.js: basic checks passed')
 "
 
+      - name: Check Content-Security-Policy
+        run: python3 -c "
+import re
+with open('index.html') as f:
+    content = f.read()
+    m = re.search(r'<meta http-equiv=\"Content-Security-Policy\"[^>]*content=\"([^\"]+)\"', content)
+    if not m:
+        print('ERROR: index.html missing Content-Security-Policy meta tag')
+        exit(1)
+    policy = m.group(1)
+    required = ['default-src', 'style-src', 'font-src', 'connect-src', 'img-src', 'script-src']
+    for d in required:
+        if d not in policy:
+            print(f'ERROR: CSP missing {d} directive')
+            exit(1)
+    print(f'CSP: OK ({len(policy)} chars)')
+"
+
       - name: Run Python tests
         if: hashFiles('tests/test_weather.py') != ''
         run: |
