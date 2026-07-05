@@ -202,6 +202,7 @@ test('install caches static assets', async () => {
   assert.ok(skipWaitingCalled, 'skipWaiting should be called');
   assert.ok(cacheAddAllArgs !== null, 'cache.addAll should be called');
   assert.ok(cacheAddAllArgs.includes('index.html'), 'should cache index.html');
+  assert.ok(cacheAddAllArgs.includes('frontend/styles.css'), 'should cache frontend/styles.css');
   assert.ok(cacheAddAllArgs.includes('manifest.json'), 'should cache manifest.json');
   assert.ok(cacheAddAllArgs.includes('404.html'), 'should cache 404.html');
 });
@@ -511,9 +512,10 @@ test('STATIC_ASSETS includes required files', function() {
   const assets = extractArray('STATIC_ASSETS');
   assert.ok(assets.indexOf('.') !== -1, 'Missing root "."');
   assert.ok(assets.indexOf('index.html') !== -1, 'Missing index.html');
+  assert.ok(assets.indexOf('frontend/styles.css') !== -1, 'Missing frontend/styles.css');
   assert.ok(assets.indexOf('manifest.json') !== -1, 'Missing manifest.json');
   assert.ok(assets.indexOf('404.html') !== -1, 'Missing 404.html');
-  assert.ok(assets.length >= 4, 'Expected at least 4 static assets');
+  assert.ok(assets.length >= 5, 'Expected at least 5 static assets');
 });
 
 test('API_ORIGINS includes both Open-Meteo endpoints', function() {

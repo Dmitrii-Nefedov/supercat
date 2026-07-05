@@ -21,18 +21,15 @@ DevOps engineering documentation for the Supercat Weather PWA.
 ### CI Pipeline
 - **File**: `.github/workflows/ci.yml`
 - **Trigger**: Pull requests targeting `main` and pushes to `main`
-- **Checks**:
-  - HTML5 validation (via `html5validator-action`) with CSS checks
-  - JSON syntax validation (all `.json` files)
-  - Service worker integrity check (lifecycle events present)
-  - Content-Security-Policy validation (required directives present in `index.html`)
-  - Python tests (`tests/test_weather.py`) with pytest
-  - JavaScript unit tests (`tests/test_weather.js`) — pure function tests
-  - Service worker unit tests (`tests/test_sw.js`) — cache strategy, URL routing, static asset coverage
+- **Jobs** (parallel):
+  - **`validate`**: HTML5 validation (via `html5validator-action`) with CSS checks, JSON syntax validation (all `.json` files), service worker integrity check (lifecycle events present), Content-Security-Policy validation (required directives present in `index.html`), JavaScript unit tests (`tests/test_weather.js`), service worker unit tests (`tests/test_sw.js`)
+  - **`lint`**: Python linting with `ruff` on `weather.py` — pip cached for faster runs
+  - **`test`**: Python tests (`tests/test_weather.py`) with pytest — pip cached for faster runs
+- **Caching**: pip cache preserved between runs via `actions/cache@v4` (separate keys per job)
 ### Test Suites
-- **`tests/test_weather.py`** — 60 Python tests covering CLI commands, API mocking, WMO mappings, JSON formatting
+- **`tests/test_weather.py`** — 95 Python tests covering CLI commands, API mocking, WMO mappings, JSON formatting, hourly forecast
 - **`tests/test_weather.js`** — 37 JS tests covering temperature conversion, wind direction, UV index, WMO icons, day names
-- **`tests/test_sw.js`** — 16 SW tests covering cache configuration, lifecycle events, fetch strategy, navigation routing, cache cleanup
+- **`tests/test_sw.js`** — 22 SW tests covering cache configuration, lifecycle events, fetch strategy, navigation routing, cache cleanup, API fallback handling
 
 ### Dependency Automation
 - **File**: `.github/dependabot.yml`
@@ -122,4 +119,4 @@ gh workflow run "Deploy to GitHub Pages" --repo Dmitrii-Nefedov/supercat
 
 ---
 
-*Maintained by DevOps — last updated 2026-07-05 (Run 10)
+*Maintained by DevOps — last updated 2026-07-05 (Run 14)
