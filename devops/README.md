@@ -20,7 +20,7 @@ DevOps engineering documentation for the Supercat Weather PWA.
 
 ### CI Pipeline
 - **File**: `.github/workflows/ci.yml`
-- **Trigger**: Pull requests targeting `main`
+- **Trigger**: Pull requests targeting `main` and pushes to `main`
 - **Checks**:
   - HTML5 validation (via `html5validator-action`) with CSS checks
   - JSON syntax validation (all `.json` files)
@@ -81,6 +81,10 @@ Priority levels for the Supercat Weather app:
 - **Content Security Policy**: Not yet configured — recommended addition.
 - **Dependency updates**: Automated via Dependabot (Actions runners only).
 
+## Tooling
+
+- **`.editorconfig`**: Consistent editor settings (2-space indent, UTF-8, LF line endings)
+
 ## Runbook
 
 ### Manual deploy
@@ -101,4 +105,4 @@ gh workflow run "Deploy to GitHub Pages" --repo Dmitrii-Nefedov/supercat
 
 ---
 
-*Maintained by DevOps — last updated 2026-07-05*
+*Maintained by DevOps — last updated 2026-07-05 (Run 8)
