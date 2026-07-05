@@ -896,6 +896,45 @@
     animation: snowDrift 5s ease-in-out infinite, float 4s ease-in-out infinite;
   }
 
+  body[data-weather="foggy"] .weather-icon {
+    animation: fogPulse 4s ease-in-out infinite;
+  }
+
+  body[data-weather="clear-night"] .weather-icon {
+    animation: twinkle 3s ease-in-out infinite, float 4s ease-in-out infinite;
+  }
+
+  /* ===== UV Index Colors ===== */
+  .uv-low { color: #4ade80; }
+  .uv-moderate { color: #facc15; }
+  .uv-high { color: #fb923c; }
+  .uv-very-high { color: #ef4444; }
+  .uv-extreme { color: #a78bfa; }
+
+  body[data-weather="snowy"] .uv-low,
+  body[data-weather="foggy"] .uv-low { color: #16a34a; }
+  body[data-weather="snowy"] .uv-moderate,
+  body[data-weather="foggy"] .uv-moderate { color: #a16207; }
+  body[data-weather="snowy"] .uv-high,
+  body[data-weather="foggy"] .uv-high { color: #c2410c; }
+  body[data-weather="snowy"] .uv-very-high,
+  body[data-weather="foggy"] .uv-very-high { color: #b91c1c; }
+  body[data-weather="snowy"] .uv-extreme,
+  body[data-weather="foggy"] .uv-extreme { color: #7c3aed; }
+
+  /* ===== Focus Styles ===== */
+  .search-input:focus-visible,
+  .locate-btn:focus-visible,
+  .forecast-toggle button:focus-visible,
+  .search-result-item:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.6);
+    outline-offset: 2px;
+  }
+
+  .search-result-item[aria-selected="true"] {
+    background: rgba(255, 255, 255, 0.15);
+  }
+
   @keyframes spinSlow {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
@@ -923,6 +962,41 @@
     0%, 100% { transform: translateY(0) rotate(0deg); }
     25% { transform: translateY(-3px) rotate(-8deg); }
     75% { transform: translateY(3px) rotate(8deg); }
+  }
+
+  @keyframes fogPulse {
+    0%, 100% { opacity: 0.6; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.05); }
+  }
+
+  @keyframes twinkle {
+    0%, 100% { opacity: 0.7; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.15); }
+  }
+
+  /* ===== Loading Bar ===== */
+  .loading-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    border-radius: 32px 32px 0 0;
+    overflow: hidden;
+    z-index: 10;
+  }
+
+  .loading-bar-inner {
+    height: 100%;
+    width: 30%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
+    border-radius: 2px;
+    animation: loadingSlide 1.2s ease-in-out infinite;
+  }
+
+  @keyframes loadingSlide {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(400%); }
   }
 </style>
 </head>
@@ -1056,6 +1130,15 @@
     return dirs[Math.round(degrees / 22.5) % 16];
   }
 
+  function getUVClass(uv) {
+    if (uv == null) return '';
+    if (uv <= 2) return 'uv-low';
+    if (uv <= 5) return 'uv-moderate';
+    if (uv <= 7) return 'uv-high';
+    if (uv <= 10) return 'uv-very-high';
+    return 'uv-extreme';
+  }
+
   function setWeatherTheme(code, isDay) {
     let theme;
     if (code === 0 || code === 1) theme = isDay ? 'sunny' : 'clear-night';
@@ -1153,7 +1236,7 @@
           <div class="date">${dateStr}</div>
         </div>
       </div>
-      <div class="main-weather">
+      <div class="main-weather" aria-live="polite" aria-atomic="true">
         <div>
           <div class="condition">${desc}</div>
           <div class="temp-group">
@@ -1197,7 +1280,7 @@
         </div>
         <div class="detail-item">
           <div class="detail-icon">☀️</div>
-          <div class="detail-value">${current.uv_index != null ? current.uv_index.toFixed(1) : '—'}</div>
+          <div class="detail-value ${getUVClass(current.uv_index)}" style="font-size:15px">${current.uv_index != null ? current.uv_index.toFixed(1) : '—'}</div>
           <div class="detail-label">УФ-индекс</div>
         </div>
         <div class="detail-item">
@@ -1206,15 +1289,15 @@
           <div class="detail-label">Направление ветра</div>
         </div>
       </div>
-      <div class="forecast-toggle" id="forecastToggle">
-        <button class="active" data-view="daily" aria-pressed="true">На день</button>
-        <button data-view="hourly" aria-pressed="false">Почасово</button>
+      <div class="forecast-toggle" id="forecastToggle" role="tablist" aria-label="Вид прогноза">
+        <button class="active" data-view="daily" role="tab" aria-selected="true">На день</button>
+        <button data-view="hourly" role="tab" aria-selected="false">Почасово</button>
       </div>
-      <div class="daily-container visible" id="dailyContainer">
+      <div class="daily-container visible" id="dailyContainer" role="tabpanel" aria-label="Прогноз на неделю">
         <div class="forecast-title">Прогноз на неделю</div>
         <div class="forecast">${forecastHtml}</div>
       </div>
-      <div class="hourly-container" id="hourlyContainer">
+      <div class="hourly-container" id="hourlyContainer" role="tabpanel" aria-label="Почасовой прогноз">
         <div class="forecast-title">Следующие 24 часа</div>
         <div class="hourly-scroll">${hourlyHtml}</div>
       </div>
@@ -1265,10 +1348,10 @@
       const view = btn.dataset.view;
       toggle.querySelectorAll('button').forEach(b => {
         b.classList.remove('active');
-        b.setAttribute('aria-pressed', 'false');
+        b.setAttribute('aria-selected', 'false');
       });
       btn.classList.add('active');
-      btn.setAttribute('aria-pressed', 'true');
+      btn.setAttribute('aria-selected', 'true');
       daily.classList.toggle('visible', view === 'daily');
       hourly.classList.toggle('visible', view === 'hourly');
     });
@@ -1308,9 +1391,29 @@
     bindSearchUI(selectedCity);
   }
 
+  function showLoadingBar() {
+    const container = document.querySelector('.container');
+    if (!container) return;
+    let bar = container.querySelector('.loading-bar');
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.className = 'loading-bar';
+      bar.innerHTML = '<div class="loading-bar-inner"></div>';
+      bar.setAttribute('aria-hidden', 'true');
+      container.prepend(bar);
+    }
+  }
+
+  function hideLoadingBar() {
+    const bar = document.querySelector('.loading-bar');
+    if (bar) bar.remove();
+  }
+
   async function fetchWeather(city) {
     try {
-      renderLoader();
+      const hasExistingData = !!document.querySelector('.temp-current');
+      if (!hasExistingData) renderLoader();
+      showLoadingBar();
       const params = new URLSearchParams({
         latitude: city.latitude, longitude: city.longitude,
         current: 'temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,wind_direction_10m,cloud_cover,surface_pressure,uv_index',
@@ -1324,8 +1427,10 @@
       const res = await fetch(`${WX_API}?${params}`);
       if (!res.ok) throw new Error('Ошибка загрузки данных');
       const data = await res.json();
+      hideLoadingBar();
       renderWeather(data, city);
     } catch (err) {
+      hideLoadingBar();
       renderError(err.message || 'Не удалось загрузить прогноз погоды');
     }
   }
@@ -1370,8 +1475,8 @@
           results.classList.remove('visible');
           return;
         }
-        results.innerHTML = cities.map(c => `
-          <div class="search-result-item" role="option" data-lat="${c.latitude}" data-lon="${c.longitude}" data-tz="${c.timezone || ''}" data-name="${c.name}" data-country="${c.country || ''}">
+        results.innerHTML = cities.map((c, i) => `
+          <div class="search-result-item" role="option" tabindex="${i === 0 ? '0' : '-1'}" data-lat="${c.latitude}" data-lon="${c.longitude}" data-tz="${c.timezone || ''}" data-name="${c.name}" data-country="${c.country || ''}" ${i === 0 ? 'aria-selected="true"' : ''}>
             <div class="result-name">${c.name}</div>
             <div class="result-detail">${c.admin1 ? c.admin1 + ', ' : ''}${c.country || ''}</div>
           </div>
@@ -1381,16 +1486,7 @@
       }, 300);
     });
 
-    input.addEventListener('keydown', function(e) {
-      if (e.key === 'Escape') {
-        results.classList.remove('visible');
-        input.setAttribute('aria-expanded', 'false');
-        this.blur();
-      }
-    });
-
-    results.addEventListener('click', function(e) {
-      const item = e.target.closest('.search-result-item');
+    function selectResult(item) {
       if (!item) return;
       const selected = {
         name: item.dataset.name,
@@ -1405,6 +1501,55 @@
       saveCity(selected);
       selectedCity = selected;
       fetchWeather(selected);
+    }
+
+    input.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        results.classList.remove('visible');
+        input.setAttribute('aria-expanded', 'false');
+        this.blur();
+        return;
+      }
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        const items = results.querySelectorAll('.search-result-item');
+        if (items.length === 0) return;
+        const current = results.querySelector('[aria-selected="true"]');
+        let idx = current ? Array.from(items).indexOf(current) : -1;
+        if (e.key === 'ArrowDown') {
+          idx = (idx + 1) % items.length;
+        } else {
+          idx = (idx - 1 + items.length) % items.length;
+        }
+        items.forEach(function(it) {
+          it.removeAttribute('aria-selected');
+          it.tabIndex = -1;
+        });
+        items[idx].setAttribute('aria-selected', 'true');
+        items[idx].tabIndex = 0;
+        items[idx].focus();
+        return;
+      }
+      if (e.key === 'Enter') {
+        const selected = results.querySelector('[aria-selected="true"]');
+        if (selected) {
+          e.preventDefault();
+          selectResult(selected);
+        }
+      }
+    });
+
+    results.addEventListener('click', function(e) {
+      const item = e.target.closest('.search-result-item');
+      if (!item) return;
+      selectResult(item);
+    });
+
+    results.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        const item = e.target.closest('.search-result-item');
+        if (item) selectResult(item);
+      }
     });
 
     if (!window._searchDocListenerAdded) {
