@@ -23,7 +23,7 @@ jobs:
           node-version: '22'
 
       - name: Check HTML validity
-        uses: Cyb3r-Jak3/html5validator-action@v7.2.4
+        uses: cyb3r-jak3/html5validator-action@v8.0.0
         with:
           root: "."
           css: true
@@ -36,35 +36,37 @@ jobs:
           done
 
       - name: Check service worker syntax
-        run: python3 -c "
-import re
-with open('sw.js') as f:
-    content = f.read()
-    if 'self.addEventListener' not in content:
-        print('ERROR: sw.js missing self.addEventListener')
-        exit(1)
-    if 'install' not in content or 'fetch' not in content or 'activate' not in content:
-        print('WARNING: sw.js may be missing lifecycle events')
-    print('sw.js: basic checks passed')
-"
+        run: |
+          python3 -c "
+          import re
+          with open('sw.js') as f:
+              content = f.read()
+              if 'self.addEventListener' not in content:
+                  print('ERROR: sw.js missing self.addEventListener')
+                  exit(1)
+              if 'install' not in content or 'fetch' not in content or 'activate' not in content:
+                  print('WARNING: sw.js may be missing lifecycle events')
+              print('sw.js: basic checks passed')
+          "
 
       - name: Check Content-Security-Policy
-        run: python3 -c "
-import re
-with open('index.html') as f:
-    content = f.read()
-    m = re.search(r'<meta http-equiv=\"Content-Security-Policy\"[^>]*content=\"([^\"]+)\"', content)
-    if not m:
-        print('ERROR: index.html missing Content-Security-Policy meta tag')
-        exit(1)
-    policy = m.group(1)
-    required = ['default-src', 'style-src', 'font-src', 'connect-src', 'img-src', 'script-src']
-    for d in required:
-        if d not in policy:
-            print(f'ERROR: CSP missing {d} directive')
-            exit(1)
-    print(f'CSP: OK ({len(policy)} chars)')
-"
+        run: |
+          python3 -c "
+          import re
+          with open('index.html') as f:
+              content = f.read()
+              m = re.search(r'<meta http-equiv=\"Content-Security-Policy\"[^>]*content=\"([^\"]+)\"', content)
+              if not m:
+                  print('ERROR: index.html missing Content-Security-Policy meta tag')
+                  exit(1)
+              policy = m.group(1)
+              required = ['default-src', 'style-src', 'font-src', 'connect-src', 'img-src', 'script-src']
+              for d in required:
+                  if d not in policy:
+                      print(f'ERROR: CSP missing {d} directive')
+                      exit(1)
+              print(f'CSP: OK ({len(policy)} chars)')
+          "
 
       - name: Run Python tests
         if: hashFiles('tests/test_weather.py') != ''
