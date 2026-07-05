@@ -312,7 +312,7 @@ def format_hourly_json(data: dict[str, Any]) -> list[dict[str, Any]]:
             "precipitation": hourly["precipitation"][i],
             "weather_code": hourly["weather_code"][i],
             "wind_speed": hourly["wind_speed_10m"][i],
-            "wind_direction": hourly.get("wind_direction_10m", [None])[i],
+            "wind_direction": hourly.get("wind_direction_10m", [None] * len(hourly["time"]))[i],
         })
     return hours
 
