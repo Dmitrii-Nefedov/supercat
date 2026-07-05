@@ -1,8 +1,9 @@
-const CACHE = 'supercat-weather-v4';
+const CACHE = 'supercat-weather-v5';
 const API_CACHE = 'supercat-api-v1';
 const STATIC_ASSETS = [
   '.',
   'index.html',
+  'frontend/styles.css',
   'manifest.json',
   '404.html'
 ];
