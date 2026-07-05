@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Прогноз погоды — Москва</title>
+<title>Прогноз погоды</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
 
   body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -22,7 +22,7 @@
 
   .container {
     width: 100%;
-    max-width: 520px;
+    max-width: 560px;
     position: relative;
   }
 
@@ -42,6 +42,115 @@
     to { opacity: 1; transform: translateY(0); }
   }
 
+  .search-container {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    position: relative;
+  }
+
+  .search-wrapper {
+    flex: 1;
+    position: relative;
+  }
+
+  .search-input {
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.06);
+    color: #fff;
+    font-family: inherit;
+    font-size: 15px;
+    outline: none;
+    transition: border-color 0.2s, background 0.2s;
+  }
+
+  .search-input::placeholder {
+    color: rgba(255, 255, 255, 0.35);
+  }
+
+  .search-input:focus {
+    border-color: rgba(255, 255, 255, 0.35);
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .locate-btn {
+    flex-shrink: 0;
+    width: 46px;
+    height: 46px;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.06);
+    color: #fff;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, transform 0.2s;
+  }
+
+  .locate-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
+  }
+
+  .locate-btn:active {
+    transform: translateY(0);
+  }
+
+  .search-results {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: rgba(30, 25, 60, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.6);
+    z-index: 100;
+    max-height: 240px;
+    overflow-y: auto;
+    display: none;
+  }
+
+  .search-results.visible {
+    display: block;
+  }
+
+  .search-result-item {
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: background 0.15s;
+    font-size: 14px;
+  }
+
+  .search-result-item:first-child {
+    border-radius: 16px 16px 0 0;
+  }
+
+  .search-result-item:last-child {
+    border-radius: 0 0 16px 16px;
+  }
+
+  .search-result-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .search-result-item .result-name {
+    font-weight: 500;
+  }
+
+  .search-result-item .result-detail {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.45);
+    font-weight: 300;
+  }
+
   .header {
     display: flex;
     justify-content: space-between;
@@ -53,6 +162,13 @@
     font-size: 28px;
     font-weight: 600;
     letter-spacing: -0.5px;
+  }
+
+  .city .city-sub {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.45);
+    font-weight: 300;
+    margin-top: 2px;
   }
 
   .city .date {
@@ -261,6 +377,11 @@
     color: rgba(255, 255, 255, 0.6);
   }
 
+  .locating {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
   @media (max-width: 480px) {
     .card { padding: 24px 16px; border-radius: 24px; }
     .temp-current { font-size: 56px; }
@@ -281,15 +402,24 @@
       <div class="loader-text">Загружаем погоду...</div>
     </div>
   </div>
-  <div class="attribution">Данные: <a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo</a></div>
+  <div class="attribution">Данные: <a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo</a> · Геокодинг: <a href="https://open-meteo.com/en/docs/geocoding-api" target="_blank" rel="noopener">Open-Meteo Geocoding</a></div>
 </div>
 
 <script>
 (async function() {
   const app = document.getElementById('app');
-  const API = 'https://api.open-meteo.com/v1/forecast';
-  const LAT = 55.7558;
-  const LON = 37.6173;
+  const GEO_API = 'https://geocoding-api.open-meteo.com/v1/search';
+  const WX_API = 'https://api.open-meteo.com/v1/forecast';
+
+  const STORAGE_KEY = 'supercat_weather_city';
+
+  const DEFAULT_CITY = {
+    name: 'Москва',
+    country: 'Россия',
+    latitude: 55.7558,
+    longitude: 37.6173,
+    timezone: 'Europe/Moscow'
+  };
 
   const wmoCodes = {
     0: '☀️', 1: '🌤️', 2: '⛅', 3: '☁️', 45: '🌫️', 48: '🌫️',
@@ -312,6 +442,23 @@
     95: 'Гроза', 96: 'Гроза с градом', 99: 'Сильная гроза с градом'
   };
 
+  let selectedCity = loadCity();
+  let searchTimeout = null;
+
+  function loadCity() {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return DEFAULT_CITY;
+  }
+
+  function saveCity(city) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(city));
+    } catch {}
+  }
+
   function getDayName(dateStr, index) {
     if (index === 0) return 'Сегодня';
     if (index === 1) return 'Завтра';
@@ -320,7 +467,7 @@
     return days[date.getDay()];
   }
 
-  function render(data) {
+  function renderWeather(data, city) {
     const current = data.current;
     const daily = data.daily;
     const code = current.weather_code;
@@ -344,9 +491,17 @@
     }
 
     app.innerHTML = `
+      <div class="search-container">
+        <div class="search-wrapper">
+          <input class="search-input" id="searchInput" type="text" placeholder="Поиск города..." autocomplete="off">
+          <div class="search-results" id="searchResults"></div>
+        </div>
+        <button class="locate-btn" id="locateBtn" title="Моё местоположение" type="button">📍</button>
+      </div>
       <div class="header">
         <div class="city">
-          <h1>Москва</h1>
+          <h1>${city.name}</h1>
+          <div class="city-sub">${city.country || ''}</div>
           <div class="date">${dateStr}</div>
         </div>
       </div>
@@ -381,33 +536,210 @@
       <div class="forecast-title">Прогноз на неделю</div>
       <div class="forecast">${forecastHtml}</div>
     `;
+
+    bindSearchUI(city);
   }
 
   function renderError(msg) {
     app.innerHTML = `
+      <div class="search-container">
+        <div class="search-wrapper">
+          <input class="search-input" id="searchInput" type="text" placeholder="Поиск города..." autocomplete="off">
+          <div class="search-results" id="searchResults"></div>
+        </div>
+        <button class="locate-btn" id="locateBtn" title="Моё местоположение" type="button">📍</button>
+      </div>
       <div class="error">
         <div class="error-icon">😔</div>
         <div class="error-text">${msg}</div>
       </div>
     `;
+    bindSearchUI(selectedCity);
   }
 
-  try {
-    const params = new URLSearchParams({
-      latitude: LAT, longitude: LON,
-      current: 'temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,cloud_cover',
-      daily: 'weather_code,temperature_2m_max,temperature_2m_min',
-      timezone: 'Europe/Moscow',
-      forecast_days: 7
+  function renderLoader() {
+    app.innerHTML = `
+      <div class="search-container">
+        <div class="search-wrapper">
+          <input class="search-input" id="searchInput" type="text" placeholder="Поиск города..." autocomplete="off">
+          <div class="search-results" id="searchResults"></div>
+        </div>
+        <button class="locate-btn" id="locateBtn" title="Моё местоположение" type="button">📍</button>
+      </div>
+      <div class="loader">
+        <div class="spinner"></div>
+        <div class="loader-text">Загружаем погоду...</div>
+      </div>
+    `;
+    bindSearchUI(selectedCity);
+  }
+
+  async function fetchWeather(city) {
+    try {
+      renderLoader();
+      const params = new URLSearchParams({
+        latitude: city.latitude, longitude: city.longitude,
+        current: 'temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,cloud_cover',
+        daily: 'weather_code,temperature_2m_max,temperature_2m_min',
+        timezone: city.timezone || 'Europe/Moscow',
+        forecast_days: 7
+      });
+
+      const res = await fetch(`${WX_API}?${params}`);
+      if (!res.ok) throw new Error('Ошибка загрузки данных');
+      const data = await res.json();
+      renderWeather(data, city);
+    } catch (err) {
+      renderError(err.message || 'Не удалось загрузить прогноз погоды');
+    }
+  }
+
+  async function searchCities(query) {
+    if (query.length < 2) return [];
+    try {
+      const params = new URLSearchParams({
+        name: query,
+        count: 6,
+        language: 'ru',
+        format: 'json'
+      });
+      const res = await fetch(`${GEO_API}?${params}`);
+      if (!res.ok) throw new Error('Geocoding error');
+      const data = await res.json();
+      return data.results || [];
+    } catch {
+      return [];
+    }
+  }
+
+  function bindSearchUI(city) {
+    const input = document.getElementById('searchInput');
+    const results = document.getElementById('searchResults');
+    const locateBtn = document.getElementById('locateBtn');
+    if (!input || !results) return;
+
+    input.addEventListener('input', function() {
+      clearTimeout(searchTimeout);
+      const query = this.value.trim();
+      if (query.length < 2) {
+        results.classList.remove('visible');
+        return;
+      }
+      searchTimeout = setTimeout(async () => {
+        const cities = await searchCities(query);
+        if (document.getElementById('searchInput') !== input) return;
+        if (input.value.trim() !== query) return;
+        if (cities.length === 0) {
+          results.classList.remove('visible');
+          return;
+        }
+        results.innerHTML = cities.map(c => `
+          <div class="search-result-item" data-lat="${c.latitude}" data-lon="${c.longitude}" data-tz="${c.timezone || ''}" data-name="${c.name}" data-country="${c.country || ''}">
+            <div class="result-name">${c.name}</div>
+            <div class="result-detail">${c.admin1 ? c.admin1 + ', ' : ''}${c.country || ''}</div>
+          </div>
+        `).join('');
+        results.classList.add('visible');
+      }, 300);
     });
 
-    const res = await fetch(`${API}?${params}`);
-    if (!res.ok) throw new Error('Ошибка загрузки данных');
-    const data = await res.json();
-    render(data);
-  } catch (err) {
-    renderError(err.message || 'Не удалось загрузить прогноз погоды');
+    input.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        results.classList.remove('visible');
+        this.blur();
+      }
+    });
+
+    results.addEventListener('click', function(e) {
+      const item = e.target.closest('.search-result-item');
+      if (!item) return;
+      const selected = {
+        name: item.dataset.name,
+        country: item.dataset.country,
+        latitude: parseFloat(item.dataset.lat),
+        longitude: parseFloat(item.dataset.lon),
+        timezone: item.dataset.tz || 'Europe/Moscow'
+      };
+      results.classList.remove('visible');
+      input.value = '';
+      saveCity(selected);
+      selectedCity = selected;
+      fetchWeather(selected);
+    });
+
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.search-wrapper')) {
+        results.classList.remove('visible');
+      }
+    });
+
+    if (locateBtn) {
+      locateBtn.addEventListener('click', function() {
+        if (!navigator.geolocation) {
+          renderError('Геолокация не поддерживается вашим браузером');
+          return;
+        }
+        locateBtn.classList.add('locating');
+        locateBtn.textContent = '⏳';
+        navigator.geolocation.getCurrentPosition(
+          async (pos) => {
+            const { latitude, longitude } = pos.coords;
+            try {
+              const params = new URLSearchParams({
+                name: `${latitude.toFixed(4)},${longitude.toFixed(4)}`,
+                count: 1,
+                language: 'ru',
+                format: 'json'
+              });
+              const res = await fetch(`${GEO_API}?${params}`);
+              const data = await res.json();
+              let city;
+              if (data.results && data.results.length > 0) {
+                const r = data.results[0];
+                city = {
+                  name: r.name,
+                  country: r.country || '',
+                  latitude: r.latitude,
+                  longitude: r.longitude,
+                  timezone: r.timezone || 'Europe/Moscow'
+                };
+              } else {
+                city = {
+                  name: `${latitude.toFixed(2)}°, ${longitude.toFixed(2)}°`,
+                  country: '',
+                  latitude,
+                  longitude,
+                  timezone: 'Europe/Moscow'
+                };
+              }
+              saveCity(city);
+              selectedCity = city;
+              fetchWeather(city);
+            } catch {
+              const fallbackCity = {
+                name: `${latitude.toFixed(2)}°, ${longitude.toFixed(2)}°`,
+                country: '',
+                latitude,
+                longitude,
+                timezone: 'Europe/Moscow'
+              };
+              saveCity(fallbackCity);
+              selectedCity = fallbackCity;
+              fetchWeather(fallbackCity);
+            }
+          },
+          () => {
+            locateBtn.classList.remove('locating');
+            locateBtn.textContent = '📍';
+            renderError('Не удалось определить местоположение. Разрешите доступ к геолокации в настройках браузера.');
+          },
+          { enableHighAccuracy: false, timeout: 10000 }
+        );
+      });
+    }
   }
+
+  fetchWeather(selectedCity);
 })();
 </script>
 </body>
