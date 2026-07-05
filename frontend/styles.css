@@ -256,7 +256,12 @@
     background: rgba(255, 255, 255, 0.1);
   }
 
-  .detail-icon { font-size: 22px; margin-bottom: 6px; }
+  .detail-icon { font-size: 22px; margin-bottom: 6px; display: flex; align-items: center; justify-content: center; }
+  .detail-icon svg { display: block; }
+  .ctrl-icon { display: inline-flex; align-items: center; justify-content: center; font-size: 16px; vertical-align: middle; }
+  .ctrl-icon svg { display: block; }
+  .precip-icon { display: inline-flex; align-items: center; vertical-align: middle; font-size: 14px; margin-right: 2px; }
+  .precip-icon svg { display: block; }
   .detail-value { font-size: 18px; font-weight: 600; }
   .detail-label { font-size: 11px; color: rgba(255, 255, 255, 0.5); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
 
@@ -659,10 +664,9 @@
     height: 22px;
     transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
-
-  .wind-compass-arrow {
-    font-size: 18px;
-    line-height: 1;
+  .wind-compass svg {
+    width: 18px;
+    height: 18px;
     filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2));
   }
 
@@ -920,7 +924,18 @@
     .detail-item, .forecast-day, .hourly-item { animation: none !important; opacity: 1 !important; }
     .spinner { animation: none !important; }
     body[data-weather] .weather-icon { animation: none !important; }
+    .si-spin, .si-drift, .si-drip, .si-fall, .si-fade, .si-twinkle, .si-flash, .si-spin-locate { animation: none !important; }
   }
+
+  /* ===== SVG Weather Icon Internal Animations ===== */
+  .si-spin { animation: spinSlow 12s linear infinite; transform-origin: center; }
+  .si-drift { animation: cloudDrift 6s ease-in-out infinite; }
+  .si-drip { animation: rainFall 1s ease-in-out infinite; }
+  .si-fall { animation: snowFall 4s ease-in-out infinite; }
+  .si-fade { animation: fogPulse 4s ease-in-out infinite; }
+  .si-twinkle { animation: twinkle 3s ease-in-out infinite; }
+  .si-flash { animation: flash 3s step-end infinite; }
+  .si-spin-locate { animation: refreshSpin 0.6s linear infinite; }
 
   /* ===== Animated Weather Icons ===== */
   body[data-weather="sunny"] .weather-icon {

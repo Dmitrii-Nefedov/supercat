@@ -19,6 +19,8 @@ Champion the user. Design interfaces that are visually appealing, intuitive, eas
 | 6 | 2026-07-05 | **Search "not found" state**: user sees "Городов не найдено" instead of empty disappearing results |
 | 7 | 2026-07-05 | **Design guide**: documented visual language, component patterns, and accessibility decisions |
 | 8 | 2026-07-05 | **Animated SVG weather icons**: custom vector illustrations (8 types) replace emoji — scalable, theme-adaptive, with independent internal element animations (spinning sun rays, falling raindrops, drifting clouds, etc.) |
+| 9 | 2026-07-05 | **SVG UI icon system (`getUIIcon`)**: all emoji in rendered UI replaced with 18 custom vector SVG icons (detail cards, controls, alerts, error, precip, wind compass) — consistent, scalable, theme-adaptive with `currentColor` |
+| 10 | 2026-07-05 | **Bug fix: SVG weather icon animations restored**: CSS extraction broke `.si-spin`, `.si-drift`, `.si-drip`, `.si-fall`, `.si-fade`, `.si-twinkle`, `.si-flash` classes — added proper animation wiring for all weather icon internal animations |
 
 ## Design Principles
 

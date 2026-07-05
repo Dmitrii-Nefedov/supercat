@@ -152,6 +152,34 @@
     return icons[type] || icons.sunny;
   }
 
+  function getUIIcon(type) {
+    var icons = {
+      'humidity': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>',
+      'wind': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2"/></svg>',
+      'pressure': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>',
+      'cloud': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z"/></svg>',
+      'sunrise': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 18a5 5 0 0 0-10 0"/><line x1="12" y1="2" x2="12" y2="9"/><line x1="4.22" y1="10.22" x2="5.64" y2="11.64"/><line x1="1" y1="18" x2="3" y2="18"/><line x1="21" y1="18" x2="23" y2="18"/><line x1="18.36" y1="11.64" x2="19.78" y2="10.22"/><line x1="23" y1="22" x2="1" y2="22"/><polyline points="8 15 12 11 16 15"/></svg>',
+      'sunset': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 18a5 5 0 0 0-10 0"/><line x1="12" y1="9" x2="12" y2="2"/><line x1="4.22" y1="10.22" x2="5.64" y2="11.64"/><line x1="1" y1="18" x2="3" y2="18"/><line x1="21" y1="18" x2="23" y2="18"/><line x1="18.36" y1="11.64" x2="19.78" y2="10.22"/><line x1="23" y1="22" x2="1" y2="22"/><polyline points="8 12 12 16 16 12"/></svg>',
+      'uv-index': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>',
+      'wind-dir': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="5 9 12 2 19 9"/><line x1="12" y1="2" x2="12" y2="22"/></svg>',
+      'locate': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>',
+      'theme-light': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>',
+      'theme-dark': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>',
+      'refresh': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>',
+      'precip': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" stroke="none"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>',
+      'error': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="24" r="21"/><line x1="24" y1="16" x2="24" y2="28"/><line x1="24" y1="32" x2="24" y2="36"/></svg>',
+      'extreme': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+      'severe': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
+      'moderate': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
+      'minor': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
+      'unknown': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="12" y1="8" x2="12" y2="11"/><line x1="12" y1="14" x2="12.01" y2="14"/></svg>',
+      'locating': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="si-spin-locate"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>',
+      'compass-arrow': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" stroke="none"><polygon points="12 2 6 16 12 13 18 16 12 2"/></svg>',
+      'precip-dot': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 12" width="1em" height="1em" fill="currentColor" stroke="none"><circle cx="6" cy="6" r="3"/></svg>'
+    };
+    return icons[type] || '';
+  }
+
   let selectedCity = loadCity();
   let searchTimeout = null;
 
@@ -326,7 +354,7 @@
         <div class="day-icon" role="img" aria-label="${dayDesc}">${getWeatherIconSVG(dayCode, true)}</div>
         <div class="day-high">${convertTemp(daily.temperature_2m_max[i], currentUnit)}${tempLabel(currentUnit)}</div>
         <div class="day-low">${convertTemp(daily.temperature_2m_min[i], currentUnit)}${tempLabel(currentUnit)}</div>
-        ${precip != null ? `<div class="day-precip">💧 ${Math.round(precip)}%</div>` : ''}
+        ${precip != null ? `<div class="day-precip"><span class="precip-icon">${getUIIcon('precip')}</span> ${Math.round(precip)}%</div>` : ''}
       </div>`;
     }
 
@@ -335,8 +363,8 @@
     const alertsHtml = data.alerts && data.alerts.length > 0
       ? (_cachedAlerts = data.alerts, `<div class="alerts-container">${data.alerts.map(function(a, i) {
           var severity = (a.severity || 'unknown').toLowerCase();
-          var iconMap = { extreme: '🚨', severe: '⚠️', moderate: '⚡', minor: 'ℹ️', unknown: '📢' };
-          var icon = iconMap[severity] || '📢';
+          var iconMap = { extreme: '${getUIIcon('extreme')}', severe: '${getUIIcon('severe')}', moderate: '${getUIIcon('moderate')}', minor: '${getUIIcon('minor')}', unknown: '${getUIIcon('unknown')}' };
+          var icon = iconMap[severity] || '${getUIIcon('unknown')}';
           return '<div class="alert-item alert-severity-' + severity + '" data-alert-idx="' + i + '" style="animation-delay:' + (0.05 * i) + 's" role="alert">' +
             '<span class="alert-icon">' + icon + '</span>' +
             '<div class="alert-body">' +
@@ -354,16 +382,16 @@
           <input class="search-input" id="searchInput" type="text" placeholder="Поиск города..." autocomplete="off" aria-label="Поиск города" role="combobox" aria-expanded="false" aria-controls="searchResults">
           <div class="search-results" id="searchResults" role="listbox" aria-label="Результаты поиска"></div>
         </div>
-        <button class="locate-btn" id="locateBtn" title="Моё местоположение" type="button" aria-label="Определить местоположение">📍</button>
+        <button class="locate-btn" id="locateBtn" title="Моё местоположение" type="button" aria-label="Определить местоположение">${getUIIcon('locate')}</button>
       </div>
       <div class="status-bar-container" id="statusBarContainer"></div>
       <div class="controls">
         <button class="unit-toggle${currentUnit === 'F' ? '' : ' active'}" data-unit="C">°C</button>
         <button class="unit-toggle${currentUnit === 'F' ? ' active' : ''}" data-unit="F">°F</button>
         <span class="control-separator"></span>
-        <button class="theme-toggle${currentTheme === 'light' ? ' active' : ''}" data-theme="light">☀️</button>
-        <button class="theme-toggle${currentTheme === 'dark' ? ' active' : ''}" data-theme="dark">🌙</button>
-        <button class="refresh-btn" id="refreshBtn" title="Обновить" type="button" aria-label="Обновить прогноз"><span class="refresh-icon" aria-hidden="true">🔄</span></button>
+        <button class="theme-toggle${currentTheme === 'light' ? ' active' : ''}" data-theme="light"><span class="ctrl-icon">${getUIIcon('theme-light')}</span></button>
+        <button class="theme-toggle${currentTheme === 'dark' ? ' active' : ''}" data-theme="dark"><span class="ctrl-icon">${getUIIcon('theme-dark')}</span></button>
+        <button class="refresh-btn" id="refreshBtn" title="Обновить" type="button" aria-label="Обновить прогноз"><span class="refresh-icon" aria-hidden="true">${getUIIcon('refresh')}</span></button>
       </div>
       ${alertsHtml}
       <div class="header">
@@ -386,45 +414,45 @@
       </div>
       <div class="details">
         <div class="detail-item">
-          <div class="detail-icon">💧</div>
+          <div class="detail-icon">${getUIIcon('humidity')}</div>
           <div class="detail-value">${current.relative_humidity_2m}%</div>
           <div class="detail-label">Влажность</div>
         </div>
         <div class="detail-item">
-          <div class="detail-icon">💨</div>
+          <div class="detail-icon">${getUIIcon('wind')}</div>
           <div class="detail-value">${Math.round(current.wind_speed_10m)} <span style="font-size:12px;font-weight:300">км/ч</span></div>
           ${current.wind_gusts_10m != null ? `<div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:2px">порывы ${Math.round(current.wind_gusts_10m)} км/ч</div>` : ''}
           <div class="detail-label">Ветер</div>
         </div>
         <div class="detail-item">
-          <div class="detail-icon">📊</div>
+          <div class="detail-icon">${getUIIcon('pressure')}</div>
           <div class="detail-value">${current.surface_pressure != null ? Math.round(current.surface_pressure) : '—'}</div>
           <div class="detail-label">Давление</div>
         </div>
         <div class="detail-item">
-          <div class="detail-icon">☁️</div>
+          <div class="detail-icon">${getUIIcon('cloud')}</div>
           <div class="detail-value">${current.cloud_cover}%</div>
           <div class="detail-label">Облачность</div>
         </div>
         <div class="detail-item">
-          <div class="detail-icon">🌅</div>
+          <div class="detail-icon">${getUIIcon('sunrise')}</div>
           <div class="detail-value" style="font-size:15px">${sunrise || '—'}</div>
           <div class="detail-label">Рассвет</div>
         </div>
         <div class="detail-item">
-          <div class="detail-icon">🌇</div>
+          <div class="detail-icon">${getUIIcon('sunset')}</div>
           <div class="detail-value" style="font-size:15px">${sunset || '—'}</div>
           <div class="detail-label">Закат</div>
         </div>
         <div class="detail-item">
-          <div class="detail-icon">☀️</div>
+          <div class="detail-icon">${getUIIcon('uv-index')}</div>
           <div class="detail-value ${getUVClass(current.uv_index)}" style="font-size:15px">${current.uv_index != null ? current.uv_index.toFixed(1) : '—'}</div>
           <div class="detail-label">УФ-индекс</div>
         </div>
         <div class="detail-item">
-          <div class="detail-icon">🧭</div>
+          <div class="detail-icon">${getUIIcon('wind-dir')}</div>
           <div class="detail-value" style="display:flex;align-items:center;justify-content:center;gap:6px">
-            <span class="wind-compass" style="transform:rotate(${current.wind_direction_10m || 0}deg)" aria-hidden="true"><span class="wind-compass-arrow">↑</span></span>
+            <span class="wind-compass" style="transform:rotate(${current.wind_direction_10m || 0}deg)" aria-hidden="true">${getUIIcon('compass-arrow')}</span>
             <span>${windDirection(current.wind_direction_10m)}</span>
           </div>
           <div class="detail-label">Направление ветра</div>
@@ -468,8 +496,8 @@
   function openAlertModal(alert) {
     if (!alert) return;
     var severity = (alert.severity || 'unknown').toLowerCase();
-    var iconMap = { extreme: '🚨', severe: '⚠️', moderate: '⚡', minor: 'ℹ️', unknown: '📢' };
-    var icon = iconMap[severity] || '📢';
+    var iconMap = { extreme: '${getUIIcon('extreme')}', severe: '${getUIIcon('severe')}', moderate: '${getUIIcon('moderate')}', minor: '${getUIIcon('minor')}', unknown: '${getUIIcon('unknown')}' };
+    var icon = iconMap[severity] || '${getUIIcon('unknown')}';
     var overlay = document.createElement('div');
     overlay.className = 'alert-modal-overlay';
     overlay.setAttribute('role', 'dialog');
@@ -576,11 +604,11 @@
           <input class="search-input" id="searchInput" type="text" placeholder="Поиск города..." autocomplete="off" aria-label="Поиск города" role="combobox" aria-expanded="false" aria-controls="searchResults">
           <div class="search-results" id="searchResults" role="listbox" aria-label="Результаты поиска"></div>
         </div>
-        <button class="locate-btn" id="locateBtn" title="Моё местоположение" type="button" aria-label="Определить местоположение">📍</button>
+        <button class="locate-btn" id="locateBtn" title="Моё местоположение" type="button" aria-label="Определить местоположение">${getUIIcon('locate')}</button>
       </div>
       <div class="status-bar-container" id="statusBarContainer"></div>
       <div class="error">
-        <div class="error-icon">😔</div>
+        <div class="error-icon">${getUIIcon('error')}</div>
         <div class="error-text">${msg}</div>
       </div>
     `;
@@ -595,7 +623,7 @@
           <input class="search-input" id="searchInput" type="text" placeholder="Поиск города..." autocomplete="off" aria-label="Поиск города" role="combobox" aria-expanded="false" aria-controls="searchResults">
           <div class="search-results" id="searchResults" role="listbox" aria-label="Результаты поиска"></div>
         </div>
-        <button class="locate-btn" id="locateBtn" title="Моё местоположение" type="button" aria-label="Определить местоположение">📍</button>
+        <button class="locate-btn" id="locateBtn" title="Моё местоположение" type="button" aria-label="Определить местоположение">${getUIIcon('locate')}</button>
       </div>
       <div class="status-bar-container" id="statusBarContainer"></div>
       <div class="loader">
@@ -800,11 +828,11 @@
           return;
         }
         locateBtn.classList.add('locating');
-        locateBtn.textContent = '⏳';
+        locateBtn.innerHTML = '${getUIIcon('locating')}';
         navigator.geolocation.getCurrentPosition(
           async (pos) => {
             locateBtn.classList.remove('locating');
-            locateBtn.textContent = '📍';
+            locateBtn.innerHTML = '${getUIIcon('locate')}';
             const { latitude, longitude } = pos.coords;
             try {
               const params = new URLSearchParams({
@@ -839,7 +867,7 @@
               fetchWeather(city);
             } catch {
               locateBtn.classList.remove('locating');
-              locateBtn.textContent = '📍';
+              locateBtn.innerHTML = '${getUIIcon('locate')}';
               const fallbackCity = {
                 name: `${latitude.toFixed(2)}°, ${longitude.toFixed(2)}°`,
                 country: '',
@@ -854,7 +882,7 @@
           },
           () => {
             locateBtn.classList.remove('locating');
-            locateBtn.textContent = '📍';
+            locateBtn.innerHTML = '${getUIIcon('locate')}';
             renderError('Не удалось определить местоположение. Разрешите доступ к геолокации в настройках браузера.');
           },
           { enableHighAccuracy: false, timeout: 10000 }
@@ -887,7 +915,7 @@
     if (!container) return;
     container.innerHTML =
       '<div class="status-bar status-update" role="status">' +
-        '<span class="status-icon">🔄</span>' +
+        '<span class="status-icon">${getUIIcon('refresh')}</span>' +
         '<span class="status-text">Доступно обновление</span>' +
         '<button class="status-action" id="updateBtn">Обновить</button>' +
       '</div>';
