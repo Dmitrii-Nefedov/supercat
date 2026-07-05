@@ -1,0 +1,226 @@
+#!/usr/bin/env python3
+"""Supercat Weather — terminal weather forecast from Open-Meteo."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+import urllib.request
+import urllib.parse
+from dataclasses import dataclass
+from datetime import datetime, timezone, timedelta
+from typing import Any
+
+
+GEO_API = "https://geocoding-api.open-meteo.com/v1/search"
+WX_API = "https://api.open-meteo.com/v1/forecast"
+
+WMO_ICONS: dict[int, str] = {
+    0: "\U00002600", 1: "\U0001f324", 2: "\U000026c5", 3: "\U00002601",
+    45: "\U0001f32b", 48: "\U0001f32b",
+    51: "\U0001f326", 53: "\U0001f326", 55: "\U0001f326",
+    56: "\U0001f327", 57: "\U0001f327",
+    61: "\U0001f327", 63: "\U0001f327", 65: "\U0001f327",
+    66: "\U0001f327", 67: "\U0001f327",
+    71: "\U0001f328", 73: "\U0001f328", 75: "\U0001f328", 77: "\U0001f328",
+    80: "\U0001f326", 81: "\U0001f326", 82: "\U0001f326",
+    85: "\U0001f328", 86: "\U0001f328",
+    95: "\u26c8", 96: "\u26c8", 99: "\u26c8",
+}
+
+WMO_DESC: dict[int, str] = {
+    0: "Clear", 1: "Mostly clear", 2: "Partly cloudy", 3: "Overcast",
+    45: "Foggy", 48: "Depositing rime",
+    51: "Light drizzle", 53: "Drizzle", 55: "Heavy drizzle",
+    56: "Freezing drizzle", 57: "Heavy freezing drizzle",
+    61: "Light rain", 63: "Rain", 65: "Heavy rain",
+    66: "Freezing rain", 67: "Heavy freezing rain",
+    71: "Light snow", 73: "Snow", 75: "Heavy snow", 77: "Snow grains",
+    80: "Rain showers", 81: "Heavy rain showers", 82: "Violent rain showers",
+    85: "Snow showers", 86: "Heavy snow showers",
+    95: "Thunderstorm", 96: "Thunderstorm with hail", 99: "Severe thunderstorm with hail",
+}
+
+
+CYAN = "\033[36m"
+GREEN = "\033[32m"
+YELLOW = "\033[33m"
+RED = "\033[31m"
+BOLD = "\033[1m"
+RESET = "\033[0m"
+DIM = "\033[2m"
+
+
+@dataclass
+class City:
+    name: str
+    country: str
+    latitude: float
+    longitude: float
+    timezone: str
+
+
+def api_get(url: str, params: dict[str, Any]) -> dict[str, Any]:
+    qs = urllib.parse.urlencode(params)
+    req = urllib.request.Request(f"{url}?{qs}", headers={"User-Agent": "supercat-weather/1.0"})
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        return json.loads(resp.read().decode())
+
+
+def search_city(query: str) -> list[City]:
+    data = api_get(GEO_API, {"name": query, "count": 8, "language": "en", "format": "json"})
+    results = data.get("results") or []
+    return [
+        City(
+            name=r["name"],
+            country=r.get("country", ""),
+            latitude=r["latitude"],
+            longitude=r["longitude"],
+            timezone=r.get("timezone", "UTC"),
+        )
+        for r in results
+    ]
+
+
+def fetch_weather(city: City) -> dict[str, Any]:
+    params = {
+        "latitude": city.latitude,
+        "longitude": city.longitude,
+        "current": "temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,cloud_cover,surface_pressure",
+        "daily": "weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_sum,precipitation_probability_max",
+        "timezone": city.timezone,
+        "forecast_days": 7,
+    }
+    return api_get(WX_API, params)
+
+
+def day_name(date_str: str, index: int) -> str:
+    if index == 0:
+        return "Today"
+    if index == 1:
+        return "Tomorrow"
+    dt = datetime.strptime(date_str, "%Y-%m-%d")
+    return dt.strftime("%a")
+
+
+def color_temp(temp: float) -> str:
+    if temp >= 30:
+        return f"{RED}{temp:.0f}{RESET}"
+    elif temp >= 20:
+        return f"{YELLOW}{temp:.0f}{RESET}"
+    elif temp >= 10:
+        return f"{GREEN}{temp:.0f}{RESET}"
+    else:
+        return f"{CYAN}{temp:.0f}{RESET}"
+
+
+def print_current(data: dict[str, Any], city: City) -> None:
+    cur = data["current"]
+    code = cur["weather_code"]
+    icon = WMO_ICONS.get(code, "\U0001f324")
+    desc = WMO_DESC.get(code, "Unknown")
+    temp = cur["temperature_2m"]
+    feels = cur["apparent_temperature"]
+    humid = cur["relative_humidity_2m"]
+    wind = cur["wind_speed_10m"]
+    cloud = cur["cloud_cover"]
+    pressure = cur.get("surface_pressure")
+
+    location = f"{city.name}, {city.country}" if city.country else city.name
+    header = f"{BOLD}{icon}  {location}{RESET}"
+    print(f"\n  {header}")
+    print(f"  {DIM}{'=' * 40}{RESET}")
+    print(f"  {color_temp(temp)}\u00b0C   {desc}")
+    print(f"  {DIM}Feels like{RESET} {color_temp(feels)}\u00b0C")
+    print(f"  {DIM}Humidity{RESET}    {humid}%   {DIM}Wind{RESET}  {wind:.0f} km/h   {DIM}Clouds{RESET}  {cloud}%")
+    if pressure is not None:
+        print(f"  {DIM}Pressure{RESET}   {pressure:.0f} hPa")
+
+    if "daily" in data:
+        daily = data["daily"]
+        if daily.get("sunrise") and daily.get("sunset"):
+            sunrise = daily["sunrise"][0][11:16]
+            sunset = daily["sunset"][0][11:16]
+            print(f"  {DIM}Sunrise{RESET}   {sunrise}   {DIM}Sunset{RESET}  {sunset}")
+    print()
+
+
+def print_forecast(data: dict[str, Any]) -> None:
+    daily = data["daily"]
+    print(f"  {BOLD}7-Day Forecast{RESET}")
+    print(f"  {DIM}{'─' * 40}{RESET}")
+
+    for i in range(len(daily["time"])):
+        name = day_name(daily["time"][i], i)
+        icon = WMO_ICONS.get(daily["weather_code"][i], "\U0001f324")
+        high = daily["temperature_2m_max"][i]
+        low = daily["temperature_2m_min"][i]
+        precip = daily.get("precipitation_probability_max", [None] * 7)[i]
+        precip_str = f"  {DIM}\U0001f4a7{RESET}{precip:.0f}%" if precip is not None else ""
+        print(f"  {icon}  {name:<10}  {color_temp(high)}\u00b0 /{color_temp(low)}\u00b0{precip_str}")
+
+    print()
+
+
+def cmd_current(args: argparse.Namespace) -> None:
+    cities = search_city(args.city)
+    if not cities:
+        print(f"{RED}City not found: {args.city}{RESET}", file=sys.stderr)
+        sys.exit(1)
+    city = cities[0]
+    data = fetch_weather(city)
+    print_current(data, city)
+
+
+def cmd_forecast(args: argparse.Namespace) -> None:
+    cities = search_city(args.city)
+    if not cities:
+        print(f"{RED}City not found: {args.city}{RESET}", file=sys.stderr)
+        sys.exit(1)
+    city = cities[0]
+    data = fetch_weather(city)
+    print_current(data, city)
+    print_forecast(data)
+
+
+def cmd_search(args: argparse.Namespace) -> None:
+    cities = search_city(args.query)
+    if not cities:
+        print(f"{DIM}No results for '{args.query}'{RESET}")
+        return
+    print(f"\n  {BOLD}Results for '{args.query}':{RESET}")
+    for c in cities:
+        region = f", {c.country}" if c.country else ""
+        print(f"  \U0001f4cd {c.name}{region}  {DIM}({c.latitude:.2f}, {c.longitude:.2f}){RESET}")
+    print()
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        prog="weather.py",
+        description="Supercat Weather — terminal weather from Open-Meteo",
+    )
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    p_now = sub.add_parser("now", help="Show current weather")
+    p_now.add_argument("city", help="City name")
+
+    p_forecast = sub.add_parser("forecast", aliases=["fc"], help="Show current weather + 7-day forecast")
+    p_forecast.add_argument("city", help="City name")
+
+    p_search = sub.add_parser("search", help="Search for a city")
+    p_search.add_argument("query", help="City name to search")
+
+    args = parser.parse_args()
+
+    if args.command == "now":
+        cmd_current(args)
+    elif args.command in ("forecast", "fc"):
+        cmd_forecast(args)
+    elif args.command == "search":
+        cmd_search(args)
+
+
+if __name__ == "__main__":
+    main()
