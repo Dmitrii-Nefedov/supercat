@@ -5,7 +5,9 @@ const STATIC_ASSETS = [
   'index.html',
   'frontend/styles.css',
   'manifest.json',
-  '404.html'
+  '404.html',
+  'icon-192.png',
+  'icon-512.png'
 ];
 const API_ORIGINS = ['api.open-meteo.com', 'geocoding-api.open-meteo.com'];
 

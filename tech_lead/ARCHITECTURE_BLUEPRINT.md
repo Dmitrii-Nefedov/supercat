@@ -1,30 +1,26 @@
 # Architecture Blueprint: Phase 3
 
-> Tech Lead: @supercat-agent | Updated: 2026-07-05 (Run 9)
+> Tech Lead: @supercat-agent | Updated: 2026-07-05 (Run 11)
 
 ## Current State Assessment
 
 ### What Exists
-- **Single-file SPA** (`index.html`, 2064 lines — HTML + CSS + JS inline)
-- **Python CLI** (`weather.py`)
-- **PWA** (`sw.js` + `manifest.json`)
-- **Tests** (`tests/test_weather.py` — 60 tests, `tests/test_weather.js` — 37 tests)
+- **Single-file SPA** (`index.html`, ~890 lines — HTML + JS; CSS extracted to `styles.css`)
+- **Python CLI** (`weather.py` — 425 lines)
+- **PWA** (`sw.js` + `manifest.json` + PNG icons)
+- **Tests** (`tests/test_weather.py` — 95 tests, `tests/test_weather.js` — 37 tests, `tests/test_sw.js` — 22 tests)
 - **CI/CD** (`.github/workflows/ci.yml` + `deploy.yml`)
 - **Role docs**: `analyst/`, `tech_lead/`, `devops/`, `tester/`, `designer/`, `frontend/`, `backend_dev/`
 
-### Phase 2 Completed Items ✅
-| Task | Status | Commit |
-|------|--------|--------|
-| Precipitation bar wiring | ✅ Done | `be041c7` |
-| Wind compass | ✅ Done | `be041c7` |
-| Search "not found" state | ✅ Done | `be041c7` |
-| Scroll fade mask | ✅ Done | `be041c7` |
-| View transitions | ✅ Done | `be041c7` |
-| Refresh button animation | ✅ Done | `be041c7` |
-| Weather alerts integration | ✅ Done | `fa5f682` |
-| Python CLI refactor (hourly, JSON, errors) | ✅ Done | `474af64` |
-| SW offline API cache | ✅ Done | `c23480e` |
-| CI test runners (pytest + node) | ✅ Done | `f342c84` |
+### Phase 3 Completed Items ✅
+| Task | Status | Notes |
+|------|--------|-------|
+| CI YAML syntax fix | ✅ Done | `run: |` literal block scalar for multi-line python3 -c |
+| CSS extraction | ✅ Done | `styles.css` created, index.html shrunk from 2160→890 lines |
+| PNG app icons | ✅ Done | `icon-192.png` + `icon-512.png` generated, manifest + apple-touch-icon updated |
+| SW cache updated | ✅ Done | `styles.css`, `icon-192.png`, `icon-512.png` added to STATIC_ASSETS |
+
+### Phase 2 Completed Items ✅ (Previous runs)
 
 ### What Remains
 1. **CSS extraction to `styles.css`** — P1, highest-impact structural improvement. index.html at 2064 lines remains monolithic.
