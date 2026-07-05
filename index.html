@@ -620,6 +620,48 @@
     margin-top: 2px;
   }
 
+  /* ===== Controls (unit/theme toggles) ===== */
+  .controls {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  .controls button {
+    padding: 6px 14px;
+    border: none;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.5);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.25s ease;
+  }
+
+  .controls button.active {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+  }
+
+  .controls button:hover:not(.active) {
+    color: rgba(255, 255, 255, 0.8);
+  }
+
+  body[data-weather="snowy"] .controls button,
+  body[data-weather="foggy"] .controls button {
+    background: rgba(0,0,0,0.06);
+    color: rgba(0,0,0,0.5);
+  }
+
+  body[data-weather="snowy"] .controls button.active,
+  body[data-weather="foggy"] .controls button.active {
+    background: rgba(0,0,0,0.12);
+    color: #000;
+  }
+
   /* ===== Section separator ===== */
   .daily-container.visible {
     display: block;
@@ -776,6 +818,30 @@
     } catch {}
   }
 
+  const UNIT_KEY = 'supercat_weather_unit';
+  let currentUnit = loadUnit();
+
+  function loadUnit() {
+    try {
+      const saved = localStorage.getItem(UNIT_KEY);
+      if (saved === 'F') return 'F';
+    } catch {}
+    return 'C';
+  }
+
+  function saveUnit(unit) {
+    try { localStorage.setItem(UNIT_KEY, unit); } catch {}
+  }
+
+  function convertTemp(celsius, unit) {
+    if (unit === 'F') return Math.round(celsius * 9 / 5 + 32);
+    return Math.round(celsius);
+  }
+
+  function tempLabel(unit) {
+    return unit === 'F' ? '°F' : '°C';
+  }
+
   function getDayName(dateStr, index) {
     if (index === 0) return 'Сегодня';
     if (index === 1) return 'Завтра';
@@ -831,7 +897,7 @@
       html += `<div class="hourly-item${isNow ? ' now' : ''}" style="animation-delay:${i * 0.03}s">
         <div class="hourly-time">${isNow ? 'Сейчас' : String(hourNum).padStart(2, '0') + ':00'}</div>
         <div class="hourly-icon" role="img" aria-label="${hDesc}">${wmoCodes[hCode] || '🌤️'}</div>
-        <div class="hourly-temp">${Math.round(hourly.temperature_2m[i])}°</div>
+        <div class="hourly-temp">${convertTemp(hourly.temperature_2m[i], currentUnit)}${tempLabel(currentUnit)}</div>
         ${precip != null ? `<div class="hourly-precip">${Math.round(precip)}%</div>` : ''}
       </div>`;
     }
@@ -865,8 +931,8 @@
       forecastHtml += `<div class="forecast-day">
         <div class="day-name">${getDayName(daily.time[i], i)}</div>
         <div class="day-icon" role="img" aria-label="${dayDesc}">${wmoCodes[dayCode] || '🌤️'}</div>
-        <div class="day-high">${Math.round(daily.temperature_2m_max[i])}°</div>
-        <div class="day-low">${Math.round(daily.temperature_2m_min[i])}°</div>
+        <div class="day-high">${convertTemp(daily.temperature_2m_max[i], currentUnit)}${tempLabel(currentUnit)}</div>
+        <div class="day-low">${convertTemp(daily.temperature_2m_min[i], currentUnit)}${tempLabel(currentUnit)}</div>
         ${precip != null ? `<div class="day-precip">💧 ${Math.round(precip)}%</div>` : ''}
       </div>`;
     }
@@ -881,6 +947,10 @@
         </div>
         <button class="locate-btn" id="locateBtn" title="Моё местоположение" type="button" aria-label="Определить местоположение">📍</button>
       </div>
+      <div class="controls">
+        <button class="unit-toggle${currentUnit === 'F' ? '' : ' active'}" data-unit="C">°C</button>
+        <button class="unit-toggle${currentUnit === 'F' ? ' active' : ''}" data-unit="F">°F</button>
+      </div>
       <div class="header">
         <div class="city">
           <h1>${city.name}</h1>
@@ -892,10 +962,10 @@
         <div>
           <div class="condition">${desc}</div>
           <div class="temp-group">
-            <span class="temp-current">${Math.round(current.temperature_2m)}</span>
-            <span class="temp-unit">°C</span>
+            <span class="temp-current">${convertTemp(current.temperature_2m, currentUnit)}</span>
+            <span class="temp-unit">${tempLabel(currentUnit)}</span>
           </div>
-          <div class="feels-like">Ощущается как ${Math.round(current.apparent_temperature)}°</div>
+          <div class="feels-like">Ощущается как ${convertTemp(current.apparent_temperature, currentUnit)}${tempLabel(currentUnit)}</div>
         </div>
         <div class="weather-icon" role="img" aria-label="${desc}">${icon}</div>
       </div>
@@ -957,6 +1027,20 @@
 
     bindSearchUI(city);
     bindForecastToggle();
+    bindUnitToggle();
+  }
+
+  function bindUnitToggle() {
+    document.querySelectorAll('.unit-toggle').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        const unit = this.dataset.unit;
+        if (unit === currentUnit) return;
+        currentUnit = unit;
+        saveUnit(unit);
+        document.body.setAttribute('data-unit', unit);
+        fetchWeather(selectedCity);
+      });
+    });
   }
 
   function bindForecastToggle() {
@@ -1188,6 +1272,8 @@
       });
     }
   }
+
+  document.body.setAttribute('data-unit', currentUnit);
 
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(function() {});
