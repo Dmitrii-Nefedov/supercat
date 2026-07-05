@@ -655,7 +655,68 @@
     margin-top: 2px;
   }
 
-  /* ===== Precipitation Bar ===== */
+  /* ===== View Transitions ===== */
+  .daily-container, .hourly-container {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+
+  .daily-container.visible, .hourly-container.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .daily-container:not(.visible), .hourly-container:not(.visible) {
+    opacity: 0;
+    transform: translateY(8px);
+    position: absolute;
+    pointer-events: none;
+  }
+
+  /* ===== Hourly Scroll Fade ===== */
+  .hourly-scroll {
+    mask-image: linear-gradient(to right, transparent, black 16px, black calc(100% - 16px), transparent);
+    -webkit-mask-image: linear-gradient(to right, transparent, black 16px, black calc(100% - 16px), transparent);
+  }
+
+  /* ===== Wind Compass ===== */
+  .wind-compass {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .wind-compass-arrow {
+    font-size: 18px;
+    line-height: 1;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2));
+  }
+
+  /* ===== Refresh Spin ===== */
+  .refreshing .refresh-icon {
+    display: inline-block;
+    animation: refreshSpin 0.6s linear;
+  }
+
+  @keyframes refreshSpin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  /* ===== Search No Results ===== */
+  .search-no-results {
+    padding: 16px;
+    text-align: center;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.4);
+    font-weight: 300;
+  }
+
+  body[data-theme="light"] .search-no-results {
+    color: rgba(0, 0, 0, 0.35);
+  }
   .precip-bar {
     width: 100%;
     height: 4px;
@@ -1378,7 +1439,8 @@
         <div class="hourly-time">${isNow ? 'Сейчас' : String(hourNum).padStart(2, '0') + ':00'}</div>
         <div class="hourly-icon" role="img" aria-label="${hDesc}">${wmoCodes[hCode] || '🌤️'}</div>
         <div class="hourly-temp">${convertTemp(hourly.temperature_2m[i], currentUnit)}${tempLabel(currentUnit)}</div>
-        ${precip != null ? `<div class="hourly-precip">${Math.round(precip)}%</div>` : ''}
+        ${precip != null ? `<div class="hourly-precip">${Math.round(precip)}%</div>
+        <div class="precip-bar"><div class="precip-bar-fill" style="width:${precip}%"></div></div>` : ''}
       </div>`;
     }
     return html;
@@ -1450,7 +1512,7 @@
         <span class="control-separator"></span>
         <button class="theme-toggle${currentTheme === 'light' ? ' active' : ''}" data-theme="light">☀️</button>
         <button class="theme-toggle${currentTheme === 'dark' ? ' active' : ''}" data-theme="dark">🌙</button>
-        <button class="refresh-btn" id="refreshBtn" title="Обновить" type="button" aria-label="Обновить прогноз">🔄</button>
+        <button class="refresh-btn" id="refreshBtn" title="Обновить" type="button" aria-label="Обновить прогноз"><span class="refresh-icon" aria-hidden="true">🔄</span></button>
       </div>
       ${alertsHtml}
       <div class="header">
@@ -1510,7 +1572,10 @@
         </div>
         <div class="detail-item">
           <div class="detail-icon">🧭</div>
-          <div class="detail-value">${windDirection(current.wind_direction_10m)}</div>
+          <div class="detail-value" style="display:flex;align-items:center;justify-content:center;gap:6px">
+            <span class="wind-compass" style="transform:rotate(${current.wind_direction_10m || 0}deg)" aria-hidden="true"><span class="wind-compass-arrow">↑</span></span>
+            <span>${windDirection(current.wind_direction_10m)}</span>
+          </div>
           <div class="detail-label">Направление ветра</div>
         </div>
       </div>
@@ -1758,6 +1823,8 @@
     const btn = document.getElementById('refreshBtn');
     if (!btn) return;
     btn.addEventListener('click', function() {
+      btn.classList.add('refreshing');
+      setTimeout(() => btn.classList.remove('refreshing'), 600);
       fetchWeather(selectedCity);
     });
   }
@@ -1781,7 +1848,9 @@
         if (document.getElementById('searchInput') !== input) return;
         if (input.value.trim() !== query) return;
         if (cities.length === 0) {
-          results.classList.remove('visible');
+          results.innerHTML = '<div class="search-no-results">Городов не найдено</div>';
+          results.classList.add('visible');
+          input.setAttribute('aria-expanded', 'true');
           return;
         }
         results.innerHTML = cities.map((c, i) => `
