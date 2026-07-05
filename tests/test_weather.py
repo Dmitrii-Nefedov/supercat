@@ -17,6 +17,7 @@ from weather import (
     City,
     CityNotFoundError,
     ApiError,
+    MAX_RETRIES,
     VERSION,
     WMO_DESC,
     WMO_ICONS,
@@ -290,6 +291,23 @@ def test_format_temp():
 # --- API get ---
 
 
+class TestIsRetryableStatus:
+    def test_5xx_is_retryable(self):
+        from weather import _is_retryable_status
+        for code in (500, 502, 503, 504):
+            assert _is_retryable_status(code)
+
+    def test_4xx_is_not_retryable(self):
+        from weather import _is_retryable_status
+        for code in (400, 401, 403, 404, 429):
+            assert not _is_retryable_status(code)
+
+    def test_2xx_is_not_retryable(self):
+        from weather import _is_retryable_status
+        assert not _is_retryable_status(200)
+        assert not _is_retryable_status(304)
+
+
 class TestApiGet:
     @patch("weather.urllib.request.urlopen")
     def test_success(self, mock_urlopen):
@@ -305,6 +323,37 @@ class TestApiGet:
         mock_urlopen.side_effect = urllib.error.URLError("timeout")
         with pytest.raises(ApiError, match="Request failed after 3 retries"):
             api_get("https://api.example.com", {})
+
+    @patch("weather.time.sleep")
+    @patch("weather.urllib.request.urlopen")
+    def test_retries_on_5xx(self, mock_urlopen, mock_sleep):
+        import urllib.error
+        err = urllib.error.HTTPError("https://api.example.com", 502, "Bad Gateway", {}, None)
+        mock_urlopen.side_effect = err
+        with pytest.raises(ApiError, match="HTTP 502"):
+            api_get("https://api.example.com", {})
+        assert mock_urlopen.call_count == MAX_RETRIES
+
+    @patch("weather.time.sleep")
+    @patch("weather.urllib.request.urlopen")
+    def test_fails_fast_on_4xx(self, mock_urlopen, mock_sleep):
+        import urllib.error
+        err = urllib.error.HTTPError("https://api.example.com", 404, "Not Found", {}, None)
+        mock_urlopen.side_effect = err
+        with pytest.raises(ApiError, match="HTTP 404"):
+            api_get("https://api.example.com", {})
+        assert mock_urlopen.call_count == 1
+
+    @patch("weather.time.sleep")
+    @patch("weather.urllib.request.urlopen")
+    def test_retry_then_succeeds(self, mock_urlopen, mock_sleep):
+        import urllib.error
+        err = urllib.error.HTTPError("https://api.example.com", 503, "Service Unavailable", {}, None)
+        success = make_mock_response({"status": "ok"})
+        mock_urlopen.side_effect = [err, err, success]
+        result = api_get("https://api.example.com", {})
+        assert result == {"status": "ok"}
+        assert mock_urlopen.call_count == 3
 
 
 # --- Search ---

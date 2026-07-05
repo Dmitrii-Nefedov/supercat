@@ -81,6 +81,10 @@ class City:
     timezone: str
 
 
+def _is_retryable_status(code: int) -> bool:
+    return code >= 500
+
+
 def api_get(url: str, params: dict[str, Any]) -> dict[str, Any]:
     qs = urllib.parse.urlencode(params)
     req = urllib.request.Request(f"{url}?{qs}", headers={"User-Agent": USER_AGENT})
@@ -90,6 +94,10 @@ def api_get(url: str, params: dict[str, Any]) -> dict[str, Any]:
             with urllib.request.urlopen(req, timeout=10) as resp:
                 return json.loads(resp.read().decode())
         except urllib.error.HTTPError as e:
+            if _is_retryable_status(e.code) and attempt < MAX_RETRIES - 1:
+                last_error = e
+                time.sleep(RETRY_DELAY * (2 ** attempt))
+                continue
             raise ApiError(f"HTTP {e.code}: {e.reason}") from e
         except (urllib.error.URLError, OSError) as e:
             last_error = e
@@ -317,12 +325,16 @@ def format_hourly_json(data: dict[str, Any]) -> list[dict[str, Any]]:
     return hours
 
 
-def cmd_current(args: argparse.Namespace) -> None:
+def _resolve_city_or_exit(name: str) -> City:
     try:
-        city = resolve_city(args.city)
+        return resolve_city(name)
     except CityNotFoundError as e:
         print(f"{RED}{e}{RESET}", file=sys.stderr)
         sys.exit(1)
+
+
+def cmd_current(args: argparse.Namespace) -> None:
+    city = _resolve_city_or_exit(args.city)
     data = fetch_weather(city)
     if args.format == "json":
         obj = format_current_json(data, city)
@@ -334,11 +346,7 @@ def cmd_current(args: argparse.Namespace) -> None:
 
 
 def cmd_forecast(args: argparse.Namespace) -> None:
-    try:
-        city = resolve_city(args.city)
-    except CityNotFoundError as e:
-        print(f"{RED}{e}{RESET}", file=sys.stderr)
-        sys.exit(1)
+    city = _resolve_city_or_exit(args.city)
     data = fetch_weather(city)
     if args.format == "json":
         obj = format_current_json(data, city)
@@ -350,11 +358,7 @@ def cmd_forecast(args: argparse.Namespace) -> None:
 
 
 def cmd_hourly(args: argparse.Namespace) -> None:
-    try:
-        city = resolve_city(args.city)
-    except CityNotFoundError as e:
-        print(f"{RED}{e}{RESET}", file=sys.stderr)
-        sys.exit(1)
+    city = _resolve_city_or_exit(args.city)
     data = fetch_weather(city, hourly=True)
     if args.format == "json":
         obj = format_current_json(data, city)
