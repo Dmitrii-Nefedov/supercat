@@ -42,3 +42,9 @@
 - No browser/E2E tests (require Playwright/Puppeteer)
 - No service worker unit tests
 - No integration test for full JS→API→DOM pipeline
+
+## CI Integration
+Test suites are now integrated into `.github/workflows/ci.yml`:
+- Python tests run via `pytest` on every PR to `main`
+- JavaScript tests run via `node` on every PR to `main`
+- Both run after HTML/JSON/SW validation checks

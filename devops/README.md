@@ -16,6 +16,7 @@ DevOps engineering documentation for the Supercat Weather PWA.
 - **Flow**: `checkout` → `configure-pages` (with `enablement: true` for auto-setup) → `upload-pages-artifact` → `deploy-pages`
 - **Permissions**: `contents: read`, `pages: write`, `id-token: write`
 - **Concurrency**: Grouped under `pages` — cancels in-flight deploys on new pushes.
+- **Status**: ⏳ Requires manual Pages enablement in repo settings (see [#6](https://github.com/Dmitrii-Nefedov/supercat/issues/6))
 
 ### CI Pipeline
 - **File**: `.github/workflows/ci.yml`

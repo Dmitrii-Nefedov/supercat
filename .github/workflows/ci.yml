@@ -8,6 +8,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
       - name: Check HTML validity
         uses: Cyb3r-Jak3/html5validator-action@v7.2.4
         with:
@@ -33,3 +43,13 @@ with open('sw.js') as f:
         print('WARNING: sw.js may be missing lifecycle events')
     print('sw.js: basic checks passed')
 "
+
+      - name: Run Python tests
+        if: hashFiles('tests/test_weather.py') != ''
+        run: |
+          pip install pytest requests
+          python3 -m pytest tests/test_weather.py -v
+
+      - name: Run JavaScript tests
+        if: hashFiles('tests/test_weather.js') != ''
+        run: node tests/test_weather.js
