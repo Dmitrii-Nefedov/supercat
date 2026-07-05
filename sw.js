@@ -1,10 +1,12 @@
-const CACHE = 'supercat-weather-v3';
+const CACHE = 'supercat-weather-v4';
+const API_CACHE = 'supercat-api-v1';
 const STATIC_ASSETS = [
   '.',
   'index.html',
   'manifest.json',
   '404.html'
 ];
+const API_ORIGINS = ['api.open-meteo.com', 'geocoding-api.open-meteo.com'];
 
 self.addEventListener('install', function(e) {
   e.waitUntil(
@@ -19,7 +21,7 @@ self.addEventListener('activate', function(e) {
   e.waitUntil(
     caches.keys().then(function(keys) {
       return Promise.all(
-        keys.filter(function(k) { return k !== CACHE; })
+        keys.filter(function(k) { return k !== CACHE && k !== API_CACHE; })
           .map(function(k) { return caches.delete(k); })
       );
     })
@@ -33,8 +35,36 @@ self.addEventListener('message', function(e) {
   }
 });
 
+function isAPIRequest(url) {
+  return API_ORIGINS.some(function(origin) { return url.indexOf(origin) !== -1; });
+}
+
 self.addEventListener('fetch', function(e) {
-  const isNavigate = e.request.mode === 'navigate';
+  var url = e.request.url;
+
+  if (isAPIRequest(url)) {
+    e.respondWith(
+      fetch(e.request).then(function(resp) {
+        if (resp.ok) {
+          var clone = resp.clone();
+          caches.open(API_CACHE).then(function(cache) {
+            cache.put(e.request, clone);
+          });
+        }
+        return resp;
+      }).catch(function() {
+        return caches.match(e.request).then(function(cached) {
+          return cached || new Response(
+            JSON.stringify({ error: true, message: 'Нет подключения к интернету' }),
+            { status: 200, headers: { 'Content-Type': 'application/json' } }
+          );
+        });
+      })
+    );
+    return;
+  }
+
+  var isNavigate = e.request.mode === 'navigate';
   if (isNavigate) {
     e.respondWith(
       fetch(e.request).catch(function() {
@@ -47,7 +77,7 @@ self.addEventListener('fetch', function(e) {
   e.respondWith(
     caches.match(e.request).then(function(cached) {
       var fetchPromise = fetch(e.request).then(function(resp) {
-        if (resp.ok && e.request.url.startsWith(self.location.origin)) {
+        if (resp.ok && url.startsWith(self.location.origin)) {
           var clone = resp.clone();
           caches.open(CACHE).then(function(cache) {
             cache.put(e.request, clone);
