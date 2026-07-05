@@ -662,6 +662,113 @@
     color: #000;
   }
 
+  /* ===== Theme Toggle ===== */
+  .control-separator {
+    width: 1px;
+    background: rgba(255, 255, 255, 0.1);
+    margin: 4px 4px;
+  }
+
+  body[data-weather="snowy"] .control-separator,
+  body[data-weather="foggy"] .control-separator {
+    background: rgba(0,0,0,0.1);
+  }
+
+  /* ===== Light Theme ===== */
+  body[data-theme="light"] .card {
+    background: rgba(255, 255, 255, 0.82);
+    color: #1a1a2e;
+    border-color: rgba(255, 255, 255, 0.4);
+  }
+
+  body[data-theme="light"] .search-input {
+    color: #1a1a2e;
+    border-color: rgba(0,0,0,0.12);
+    background: rgba(255, 255, 255, 0.5);
+  }
+
+  body[data-theme="light"] .search-input::placeholder {
+    color: rgba(0,0,0,0.3);
+  }
+
+  body[data-theme="light"] .search-input:focus {
+    border-color: rgba(0,0,0,0.25);
+    background: rgba(255, 255, 255, 0.7);
+  }
+
+  body[data-theme="light"] .detail-item,
+  body[data-theme="light"] .forecast-day,
+  body[data-theme="light"] .hourly-item,
+  body[data-theme="light"] .forecast-toggle {
+    background: rgba(0,0,0,0.05);
+  }
+
+  body[data-theme="light"] .detail-item:hover,
+  body[data-theme="light"] .forecast-day:hover,
+  body[data-theme="light"] .hourly-item:hover {
+    background: rgba(0,0,0,0.1);
+  }
+
+  body[data-theme="light"] .hourly-item.now {
+    background: rgba(0,0,0,0.1);
+    border-color: rgba(0,0,0,0.15);
+  }
+
+  body[data-theme="light"] .forecast-toggle button.active {
+    background: rgba(0,0,0,0.1);
+    color: #1a1a2e;
+  }
+
+  body[data-theme="light"] .controls button {
+    background: rgba(0,0,0,0.04);
+    color: rgba(0,0,0,0.45);
+  }
+
+  body[data-theme="light"] .controls button.active {
+    background: rgba(0,0,0,0.1);
+    color: #1a1a2e;
+  }
+
+  body[data-theme="light"] .control-separator {
+    background: rgba(0,0,0,0.1);
+  }
+
+  body[data-theme="light"] .locate-btn {
+    border-color: rgba(0,0,0,0.12);
+    background: rgba(255, 255, 255, 0.5);
+  }
+
+  body[data-theme="light"] .locate-btn:hover {
+    background: rgba(255, 255, 255, 0.8);
+  }
+
+  body[data-theme="light"] .search-results {
+    background: rgba(255, 255, 255, 0.95);
+    border-color: rgba(0,0,0,0.08);
+  }
+
+  body[data-theme="light"] .search-result-item:hover {
+    background: rgba(0,0,0,0.04);
+  }
+
+  body[data-theme="light"] .search-result-item .result-detail {
+    color: rgba(0,0,0,0.4);
+  }
+
+  body[data-theme="light"] .attribution,
+  body[data-theme="light"] .attribution a {
+    color: rgba(0,0,0,0.4);
+  }
+
+  body[data-theme="light"] .spinner {
+    border-color: rgba(0,0,0,0.1);
+    border-top-color: #1a1a2e;
+  }
+
+  body[data-theme="light"] .loader-text {
+    color: rgba(0,0,0,0.4);
+  }
+
   /* ===== Section separator ===== */
   .daily-container.visible {
     display: block;
@@ -842,6 +949,25 @@
     return unit === 'F' ? '°F' : '°C';
   }
 
+  const THEME_KEY = 'supercat_weather_theme';
+  let currentTheme = loadTheme();
+
+  function loadTheme() {
+    try {
+      const saved = localStorage.getItem(THEME_KEY);
+      if (saved === 'light' || saved === 'dark') return saved;
+    } catch {}
+    return 'dark';
+  }
+
+  function saveTheme(theme) {
+    try { localStorage.setItem(THEME_KEY, theme); } catch {}
+  }
+
+  function applyTheme(theme) {
+    document.body.setAttribute('data-theme', theme);
+  }
+
   function getDayName(dateStr, index) {
     if (index === 0) return 'Сегодня';
     if (index === 1) return 'Завтра';
@@ -950,6 +1076,9 @@
       <div class="controls">
         <button class="unit-toggle${currentUnit === 'F' ? '' : ' active'}" data-unit="C">°C</button>
         <button class="unit-toggle${currentUnit === 'F' ? ' active' : ''}" data-unit="F">°F</button>
+        <span class="control-separator"></span>
+        <button class="theme-toggle${currentTheme === 'light' ? ' active' : ''}" data-theme="light">☀️</button>
+        <button class="theme-toggle${currentTheme === 'dark' ? ' active' : ''}" data-theme="dark">🌙</button>
       </div>
       <div class="header">
         <div class="city">
@@ -1028,6 +1157,7 @@
     bindSearchUI(city);
     bindForecastToggle();
     bindUnitToggle();
+    bindThemeToggle();
   }
 
   function bindUnitToggle() {
@@ -1039,6 +1169,21 @@
         saveUnit(unit);
         document.body.setAttribute('data-unit', unit);
         fetchWeather(selectedCity);
+      });
+    });
+  }
+
+  function bindThemeToggle() {
+    document.querySelectorAll('.theme-toggle').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        const theme = this.dataset.theme;
+        if (theme === currentTheme) return;
+        currentTheme = theme;
+        saveTheme(theme);
+        document.querySelectorAll('.theme-toggle').forEach(function(b) {
+          b.classList.toggle('active', b.dataset.theme === theme);
+        });
+        applyTheme(theme);
       });
     });
   }
@@ -1273,6 +1418,7 @@
     }
   }
 
+  applyTheme(currentTheme);
   document.body.setAttribute('data-unit', currentUnit);
 
   if ('serviceWorker' in navigator) {
