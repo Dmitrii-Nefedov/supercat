@@ -49,3 +49,24 @@ Python backend developer — writes clean, idiomatic Python code.
 
 #### CI/CD workflows
 - Removed unused `requests` dependency from CI `pip install`
+
+### Run 12 (2026-07-05)
+
+#### `weather.py` improvements
+- **UV index in 7-day forecast**: added `uv_index_max` to daily API params — shows color-coded UV index in forecast output + JSON
+- **`_uv_bar()` helper**: color-coded visual UV bar (cyan/green/yellow/red/magenta for Low/Moderate/High/Very High/Extreme)
+- **`format_forecast_json()`**: now includes `uv_index_max` per day in JSON output
+
+#### `pyproject.toml` fixes
+- **Build backend**: fixed from deprecated `setuptools.backends._legacy:_Backend` to `setuptools.build_meta`
+- **`[project.urls]`**: added Homepage, Source, Issues links
+
+#### Tests (`tests/test_weather.py`)
+- 21 new tests (95 total, all passing):
+  - `TestUvBar` — 13 tests covering all severity levels, boundary conditions, and bar rendering
+  - `test_format_forecast_json` — updated to assert `uv_index_max` values
+  - `test_prints_uv_index` — forecast output includes UV
+  - `test_no_uv_when_missing` — graceful degradation without UV data
+
+#### Validation
+- All 95 Python tests pass, ruff lint clean

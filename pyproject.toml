@@ -1,6 +1,6 @@
 [build-system]
 requires = ["setuptools>=64"]
-build-backend = "setuptools.backends._legacy:_Backend"
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "supercat-weather"
@@ -9,6 +9,11 @@ description = "Terminal weather forecast from Open-Meteo"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
+
+[project.urls]
+Homepage = "https://github.com/Dmitrii-Nefedov/supercat"
+Source = "https://github.com/Dmitrii-Nefedov/supercat"
+Issues = "https://github.com/Dmitrii-Nefedov/supercat/issues"
 
 [project.scripts]
 supercat-weather = "weather:main"

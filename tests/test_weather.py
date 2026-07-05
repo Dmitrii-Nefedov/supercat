@@ -20,6 +20,7 @@ from weather import (
     VERSION,
     WMO_DESC,
     WMO_ICONS,
+    _uv_bar,
     api_get,
     cmd_current,
     cmd_forecast,
@@ -94,6 +95,7 @@ def sample_current_response() -> dict:
             "sunrise": ["2026-07-05T04:56"],
             "sunset": ["2026-07-05T21:12"],
             "precipitation_probability_max": [10, 40, 5],
+            "uv_index_max": [6.5, 4.0, 2.0],
         },
     }
 
@@ -212,6 +214,65 @@ class TestColorTemp:
     def test_negative(self):
         result = color_temp(-5)
         assert "\033[36m" in result
+
+
+# --- UV bar ---
+
+
+class TestUvBar:
+    def test_low_0(self):
+        result = _uv_bar(0)
+        assert "\033[36m" in result
+        assert "UV 0.0" in result
+
+    def test_low_2(self):
+        result = _uv_bar(2)
+        assert "\033[36m" in result
+        assert "UV 2.0" in result
+
+    def test_moderate_3(self):
+        result = _uv_bar(3)
+        assert "\033[32m" in result
+
+    def test_moderate_5(self):
+        result = _uv_bar(5)
+        assert "\033[32m" in result
+
+    def test_high_6(self):
+        result = _uv_bar(6)
+        assert "\033[33m" in result
+
+    def test_high_7(self):
+        result = _uv_bar(7)
+        assert "\033[33m" in result
+
+    def test_very_high_8(self):
+        result = _uv_bar(8)
+        assert "\033[31m" in result
+
+    def test_very_high_10(self):
+        result = _uv_bar(10)
+        assert "\033[31m" in result
+
+    def test_extreme_11(self):
+        result = _uv_bar(11)
+        assert "\033[35m" in result
+
+    def test_extreme_above(self):
+        result = _uv_bar(15)
+        assert "\033[35m" in result
+
+    def test_bar_length_max(self):
+        result = _uv_bar(10)
+        assert "\u2588" * 10 in result
+
+    def test_bar_length_min(self):
+        result = _uv_bar(0)
+        assert "\u2591" * 10 in result
+
+    def test_bar_rounded(self):
+        result = _uv_bar(3.3)
+        assert "UV 3.3" in result
 
 
 # --- format_temp ---
@@ -360,6 +421,9 @@ class TestJsonFormat:
         assert len(obj) == 3
         assert obj[0]["date"] == "2026-07-05"
         assert obj[0]["temperature_max"] == 25.0
+        assert obj[0]["uv_index_max"] == 6.5
+        assert obj[1]["uv_index_max"] == 4.0
+        assert obj[2]["uv_index_max"] == 2.0
 
     def test_format_hourly_json(self, sample_hourly_response):
         obj = format_hourly_json(sample_hourly_response)
@@ -625,6 +689,7 @@ class TestPrintForecast:
             "temperature_2m_max": [28, 25, 22, 20, 18, 15, 12],
             "temperature_2m_min": [18, 16, 14, 12, 10, 8, 6],
             "precipitation_probability_max": [10, 20, 30, 40, 50, 60, 70],
+            "uv_index_max": [1.5, 3.0, 5.5, 7.0, 9.0, 11.0, 0.5],
         }
     }
 
@@ -671,6 +736,28 @@ class TestPrintForecast:
             print_forecast(data)
             output = buf.getvalue()
             assert "💧" not in output
+
+    def test_prints_uv_index(self):
+        from weather import print_forecast
+        with patch("sys.stdout", new_callable=StringIO) as buf:
+            print_forecast(self.SAMPLE_FORECAST)
+            output = buf.getvalue()
+            assert "UV" in output
+            assert "1.5" in output
+            assert "11.0" in output
+
+    def test_no_uv_when_missing(self):
+        from weather import print_forecast
+        data = {"daily": {
+            "time": ["2026-07-05"],
+            "weather_code": [0],
+            "temperature_2m_max": [25],
+            "temperature_2m_min": [15],
+        }}
+        with patch("sys.stdout", new_callable=StringIO) as buf:
+            print_forecast(data)
+            output = buf.getvalue()
+            assert "UV" not in output
 
 
 # --- cmd_current dispatch ---

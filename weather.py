@@ -52,6 +52,7 @@ CYAN = "\033[36m"
 GREEN = "\033[32m"
 YELLOW = "\033[33m"
 RED = "\033[31m"
+MAGENTA = "\033[35m"
 BOLD = "\033[1m"
 RESET = "\033[0m"
 DIM = "\033[2m"
@@ -124,7 +125,7 @@ def _build_wx_params(city: City, hourly: bool = False) -> dict[str, Any]:
         "latitude": city.latitude,
         "longitude": city.longitude,
         "current": "temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m,cloud_cover,surface_pressure,uv_index",
-        "daily": "weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_sum,precipitation_probability_max",
+        "daily": "weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_sum,precipitation_probability_max,uv_index_max",
         "timezone": city.timezone,
         "forecast_days": 1 if hourly else 7,
     }
@@ -170,6 +171,22 @@ def color_temp(temp: float) -> str:
 
 def format_temp(temp: float) -> str:
     return f"{temp:.0f}\u00b0C"
+
+
+def _uv_bar(uv: float) -> str:
+    if uv >= 11:
+        color = MAGENTA
+    elif uv >= 8:
+        color = RED
+    elif uv >= 6:
+        color = YELLOW
+    elif uv >= 3:
+        color = GREEN
+    else:
+        color = CYAN
+    filled = min(round(uv), 10)
+    bar = "\u2588" * filled + "\u2591" * (10 - filled)
+    return f"{color}UV {uv:.1f} {bar}{RESET}"
 
 
 def format_current_json(data: dict[str, Any], city: City) -> dict[str, Any]:
@@ -244,7 +261,9 @@ def print_forecast(data: dict[str, Any]) -> None:
         low = daily["temperature_2m_min"][i]
         precip = daily.get("precipitation_probability_max", [None] * 7)[i]
         precip_str = f"  {DIM}\U0001f4a7{RESET}{precip:.0f}%" if precip is not None else ""
-        print(f"  {icon}  {name:<10}  {color_temp(high)}\u00b0 /{color_temp(low)}\u00b0{precip_str}")
+        uv = daily.get("uv_index_max", [None] * 7)[i]
+        uv_str = f"  {_uv_bar(uv)}" if uv is not None else ""
+        print(f"  {icon}  {name:<10}  {color_temp(high)}\u00b0 /{color_temp(low)}\u00b0{precip_str}{uv_str}")
 
     print()
 
@@ -259,6 +278,7 @@ def format_forecast_json(data: dict[str, Any]) -> list[dict[str, Any]]:
             "temperature_max": daily["temperature_2m_max"][i],
             "temperature_min": daily["temperature_2m_min"][i],
             "precipitation_probability_max": daily.get("precipitation_probability_max", [None] * 7)[i],
+            "uv_index_max": daily.get("uv_index_max", [None] * 7)[i],
         })
     return days
 
