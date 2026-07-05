@@ -12,6 +12,21 @@
 |---|--------|--------|
 | 1 | Архитектурный анализ кодовой базы | ✅ |
 | 2 | CI/CD blueprint (issue #3) | ⏳ Блокирован PAT scopes |
+| 3 | Architecture Blueprint Phase 2 (Run 7) | ✅ |
+
+---
+
+## Architecture Blueprint: Phase 2
+
+Создан `ARCHITECTURE_BLUEPRINT.md` — полный план развития проекта на следующий этап.
+
+### Ключевые находки (Run 7)
+
+1. **Дизайнерские изменения частично утеряны** — папка `designer/` отсутствует в рабочем дереве. CSS-классы для баров осадков существуют, но не подключены к JS-шаблону. Компас ветра, scroll fade, состояние "не найдено" не реализованы.
+2. **8 задач в 3 фазах**: Quick Wins → Structural → Enhancement
+3. **3 ADR**: CSS extraction strategy, alert rendering, SVG icon strategy
+
+Полный план: `tech_lead/ARCHITECTURE_BLUEPRINT.md`
 
 ---
 
