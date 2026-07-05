@@ -27,6 +27,12 @@ self.addEventListener('activate', function(e) {
   self.clients.claim();
 });
 
+self.addEventListener('message', function(e) {
+  if (e.data && e.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
 self.addEventListener('fetch', function(e) {
   const isNavigate = e.request.mode === 'navigate';
   if (isNavigate) {
