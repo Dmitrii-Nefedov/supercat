@@ -13,7 +13,7 @@ DevOps engineering documentation for the Supercat Weather PWA.
 ### Deployment Pipeline
 - **File**: `.github/workflows/deploy.yml`
 - **Trigger**: Push to `main` or manual `workflow_dispatch`
-- **Flow**: `checkout` → `configure-pages` → `upload-pages-artifact` → `deploy-pages`
+- **Flow**: `checkout` → `configure-pages` (with `enablement: true` for auto-setup) → `upload-pages-artifact` → `deploy-pages`
 - **Permissions**: `contents: read`, `pages: write`, `id-token: write`
 - **Concurrency**: Grouped under `pages` — cancels in-flight deploys on new pushes.
 

@@ -1,5 +1,8 @@
 # Supercat Weather 🌤️
 
+[![Deploy to GitHub Pages](https://github.com/Dmitrii-Nefedov/supercat/actions/workflows/deploy.yml/badge.svg)](https://github.com/Dmitrii-Nefedov/supercat/actions/workflows/deploy.yml)
+[![CI](https://github.com/Dmitrii-Nefedov/supercat/actions/workflows/ci.yml/badge.svg)](https://github.com/Dmitrii-Nefedov/supercat/actions/workflows/ci.yml)
+
 A beautiful, feature-rich weather forecast web app powered by [Open-Meteo](https://open-meteo.com) (free API, no key required).
 
 ## Features
