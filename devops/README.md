@@ -31,6 +31,13 @@ DevOps engineering documentation for the Supercat Weather PWA.
 - **`tests/test_weather.js`** — 37 JS tests covering temperature conversion, wind direction, UV index, WMO icons, day names
 - **`tests/test_sw.js`** — 22 SW tests covering cache configuration, lifecycle events, fetch strategy, navigation routing, cache cleanup, API fallback handling
 
+### Job Timeouts
+All CI and deploy jobs have explicit `timeout-minutes` to prevent runaway runs:
+- `validate`: 10 min
+- `lint`: 5 min
+- `test`: 5 min
+- `deploy`: 10 min
+
 ### Dependency Automation
 - **File**: `.github/dependabot.yml`
 - **Scope**: GitHub Actions runners only (no npm/pip deps — pure static site)
@@ -119,4 +126,39 @@ gh workflow run "Deploy to GitHub Pages" --repo Dmitrii-Nefedov/supercat
 
 ---
 
-*Maintained by DevOps — last updated 2026-07-05 (Run 14)
+*Maintained by DevOps — last updated 2026-07-05 (Run 15)
+
+---
+
+## Docker
+
+### Overview
+Multi-stage Docker setup for local development and production-like preview:
+- **`web`**: nginx:alpine serving the static PWA
+- **`cli`**: python:3.12-slim with the `supercat-weather` CLI installed
+
+### Quick Start
+
+```bash
+# Start the web app (http://localhost:8080)
+docker compose up web
+
+# Run the CLI (one-off)
+docker compose run --rm cli now "Moscow"
+
+# Build and run CLI directly
+docker compose run --rm cli forecast "London"
+```
+
+### Files
+- `Dockerfile` — multi-stage build (web + cli targets)
+- `docker-compose.yml` — service definitions with healthcheck
+- `.dockerignore` — excludes build/test artifacts from context
+- `nginx.conf` — production-grade nginx config (gzip, caching headers, SPA fallback)
+
+### Nginx Config Highlights
+- **Gzip** enabled for HTML/CSS/JS/JSON/PNG (min 256 bytes)
+- **`/sw.js`** served with `Cache-Control: no-cache` + `Service-Worker-Allowed: /`
+- **Static assets** (`frontend/`, `manifest.json`, icons) with 7-365d immutable cache
+- **SPA fallback** via `try_files $uri $uri/ /index.html`
+- **No build step** — files are copied directly from the repo

@@ -1,0 +1,17 @@
+.git/
+.gitignore
+.github/
+.editorconfig
+.nojekyll
+*.md
+tests/
+devops/
+backend_dev/
+frontend_dev/
+designer/
+tech_lead/
+analyst/
+tester/
+node_modules/
+__pycache__/
+*.pyc
