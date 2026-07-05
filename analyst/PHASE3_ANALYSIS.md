@@ -23,9 +23,9 @@ The most significant gap: `test_sw.js` was claimed as delivered with 11 SW unit 
 | 6 | Search not-found state | `git log: be041c7` | designer comment on issue #5 confirms | ✅ **Confirmed** |
 | 7 | tech_lead/ARCHITECTURE_BLUEPRINT.md | issue #5 comment | File doesn't exist (only tech_lead/README.md) | ❌ **False — not committed** |
 | 8 | deploy.yml auto-enables Pages | `deploy.yml:23` | `enablement: true` on `configure-pages@v5` | ⚠️ **May fail on first run** |
-| 9 | SW cache catch bug (returns 404 instead of cached) | `analyst/PHASE2_ANALYSIS.md` | `sw.js:57-58`: `.catch()` returns `caches.match('404.html')` | ✅ **Still present, unfixed** |
-| 10 | weather.py missing `uv_index_max` in daily params | `analyst/CODEBASE_ANALYSIS.md` | `weather.py:91`: daily params omit `uv_index_max`; `index.html:1786` includes it | ✅ **Still present, unfixed** |
-| 11 | weather.py missing hourly forecast data | `analyst/CODEBASE_ANALYSIS.md` | `weather.py:87-95`: no `hourly` param; `index.html:1786` requests hourly | ✅ **Still present, unfixed** |
+| 9 | SW cache catch bug (returns 404 instead of cached) | `analyst/PHASE2_ANALYSIS.md` | `sw.js:87-88`: inner `.catch()` still returns `404.html` — BUT outer `cached || fetchPromise` masks this. **API caching added** (was none), which is a bigger win. | ⚠️ **Partially addressed** |
+| 10 | weather.py missing `uv_index_max` in daily params | `analyst/CODEBASE_ANALYSIS.md` | Fixed in `474af64`: weather.py now includes `uv_index_max` in daily params | ✅ **Fixed** |
+| 11 | weather.py missing hourly forecast data | `analyst/CODEBASE_ANALYSIS.md` | Fixed in `474af64`: new `hourly`/`hr` subcommand with 48-hour forecast | ✅ **Fixed** |
 | 12 | WMO codes duplicated in 5 locations | `analyst/PHASE2_ANALYSIS.md` | `index.html` (x2), `weather.py` (x2), `test_weather.js` | ✅ **Confirmed** |
 | 13 | All 5 role folders created | issue #5 | analyst/, designer/, devops/, tech_lead/, tester/ all exist | ✅ **Confirmed** |
 | 14 | index.html grown from 1673→2064 lines | Phase 1 → Phase 3 measurement | `wc -l` confirms 2064 | ✅ **Confirmed** |
@@ -48,9 +48,9 @@ The most significant gap: `test_sw.js` was claimed as delivered with 11 SW unit 
 
 | Issue | First Flagged | Age | Impact |
 |-------|--------------|-----|--------|
-| SW cache catch bug | Phase 2 (this run) | Hours | Minor — wrong fallback on network+fresh cache failure |
-| weather.py: no `uv_index_max` | Phase 1 | ~30 commits | Daily forecast missing UV max data |
-| weather.py: no hourly | Phase 1 | ~30 commits | CLI can't show hourly forecast unlike web app |
+| SW cache catch bug | Phase 2 (this run) | Hours | Minor — wrong fallback on network+fresh cache failure (masked by outer check) |
+| weather.py: no `uv_index_max` | Phase 1 | **FIXED in 474af64** | ✅ |
+| weather.py: no hourly | Phase 1 | **FIXED in 474af64** | ✅ |
 | WMO code drift risk | Phase 2 | Hours | Silent display bug if new codes added |
 | No render/DOM tests | Phase 2 | Hours | 130+ lines of rendering logic untested |
 | Placeholder contrast fails WCAG AA | Phase 2 | Hours | Accessibility violation for low-vision users |
@@ -125,15 +125,15 @@ window.addEventListener('offline', updateStatusBar);
 
 | # | Recommendation | Status | Evidence |
 |---|---------------|--------|----------|
-| P0-1 | Fix SW cache catch bug | ❌ **Open** | `sw.js:57-58` unchanged |
+| P0-1 | Fix SW cache catch bug | ⚠️ **Partially addressed** | SW rewritten (v4) with offline API cache; the 404.html catch remains in static handler but is masked by outer check |
 | P0-2 | Add PNG icons to manifest | ❌ **Open** | `manifest.json` unchanged |
-| P0-3 | Add test runners to CI | ✅ **Fixed** | `ci.yml` lines 47-55 |
+| P0-3 | Add test runners to CI | ✅ **Fixed** | `ci.yml` lines 47-55 (Run 7); now also includes `ruff` lint (Run 8) |
 | P1-4 | Extract WMO codes to shared JSON | ❌ **Open** | Still in 5 locations |
 | P1-5 | Fix placeholder contrast | ❌ **Open** | CSS unchanged |
 | P1-6 | Add CSP meta tag | ❌ **Open** | No `<meta http-equiv>` CSP |
 | P1-7 | Remove `.highlighted` dead code | ❌ **Open** | CSS still defines `.highlighted` |
 
-**Resolution rate**: 1/7 (14%). Only the CI test runner recommendation was addressed.
+**Resolution rate**: 1.5/7 (21%). CI + partial SW fix. Notably, weather.py gaps (not in Phase 2 recs but flagged in Phase 1) were fixed by `backend_dev` agent during this run.
 
 ---
 
@@ -143,8 +143,8 @@ window.addEventListener('offline', updateStatusBar);
 |------|----------|-------|
 | Monolithic index.html (2064 lines) | 🔴 High | ↑ Growing |
 | No render/DOM tests | 🔴 High | → Same |
-| SW cache catch bug | 🟡 Medium | → Same |
-| weather.py missing features | 🟡 Medium | → Same |
+| SW cache catch bug (minor, masked) | 🟡 Medium | ↓ Improving (API cache added) |
+| weather.py missing features | 🟡 Medium | ✅ **Fixed by backend_dev** |
 | WMO code drift | 🟡 Medium | → Risk only (not occurred) |
 | No CSP headers | 🟢 Low | → Same |
 | Placeholder contrast fail | 🟢 Low | → Same |
@@ -153,6 +153,8 @@ window.addEventListener('offline', updateStatusBar);
 
 ## 9. Conclusion
 
-The codebase has grown functionally (alerts, hourly forecast, SW update, offline indicator) but not structurally. The monolithic `index.html` is now 2064 lines. 1 of 7 Phase 2 recommendations was implemented. The `test_sw.js` claim in agent memory is false — it never existed in git history. SW bug and weather.py gaps remain unfixed.
+The codebase has grown functionally (alerts, hourly forecast, SW update, offline indicator, API caching) but not structurally. The monolithic `index.html` is now 2064 lines. 1.5 of 7 Phase 2 recommendations were implemented (CI + partial SW fix). The `test_sw.js` claim in agent memory is false — it never existed in git history.
+
+**Positive development**: During this run, the `backend_dev` agent independently fixed the weather.py gaps (hourly forecast, uv_index_max) and improved the SW with offline API caching — two issues that had been open since Phase 1.
 
 **The project is feature-rich but accumulating technical debt faster than it's being resolved.** The CI pipeline is the only structural improvement that landed.
