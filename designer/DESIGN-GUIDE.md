@@ -78,15 +78,24 @@ Each weather condition triggers a gradient background:
 - **Precipitation bars**: 0.4s width transition
 
 ### Weather-specific icon animations
-| Condition | Animation |
-|-----------|-----------|
-| Sunny | 12s slow spin + float |
-| Cloudy | 6s horizontal drift + float |
-| Rainy | 1s bounce + float |
-| Thunderstorm | 3s flash + float |
-| Snowy | 5s drift + float |
-| Foggy | 4s opacity pulse |
-| Clear night | 3s twinkle + float |
+| Condition | Container animation | SVG internal animation |
+|-----------|-------------------|----------------------|
+| Sunny | float | Rays: 12s spin |
+| Partly cloudy | float | Sun: 12s spin, Cloud: 6s drift |
+| Cloudy | float | Cloud: 6s drift |
+| Rainy | float | Drops: 1s drip |
+| Thunderstorm | float | Lightning: 3s flash |
+| Snowy | float | Flakes: 4s fall & rotate |
+| Foggy | float | Bands: 4s opacity pulse |
+| Clear night | float | Stars: 3s twinkle |
+
+### SVG Weather Icons
+Custom vector illustrations replace emoji for all weather conditions:
+- **Design**: minimal flat style, consistent 64×64 viewBox, `currentColor` fill/stroke for automatic theme adaptation
+- **8 icon types**: sunny, clear-night, partly-cloudy, cloudy, foggy, rainy, snowy, thunderstorm
+- **Scaling**: `width="1em" height="1em"` — icons respond to CSS `font-size` for consistent sizing in main view (64px), hourly (24px), and daily (28px) contexts
+- **Internal element animations**: individual SVG components animate independently (spinning sun rays, falling raindrops, twinkling stars) without transform conflicts
+- **Reduced motion**: all SVG internal animations are disabled via `prefers-reduced-motion`
 
 ### Atmospheric effects
 - **Rain**: multi-layer diagonal repeating lines, 0.4s fall animation
@@ -142,10 +151,8 @@ Each weather condition triggers a gradient background:
 
 ## Future Design Opportunities
 
-1. **Animated SVG icons**: replace emoji weather icons with custom SVG illustrations
-2. **Expanded detail panel**: tap a detail card to see hourly trend chart
-3. **Weather alerts**: visual banner system for extreme weather warnings
-4. **Splash screen**: PWA splash screen matching the app theme
-5. **Drag-to-refresh**: pull down gesture on mobile
-6. **Wind particle effect**: animated wind lines during windy conditions
-7. **Sun path visualization**: arc showing sun position across the day
+1. **Expanded detail panel**: tap a detail card to see hourly trend chart
+2. **Splash screen**: PWA splash screen matching the app theme
+3. **Drag-to-refresh**: pull down gesture on mobile
+4. **Wind particle effect**: animated wind lines during windy conditions
+5. **Sun path visualization**: arc showing sun position across the day

@@ -18,6 +18,7 @@ Champion the user. Design interfaces that are visually appealing, intuitive, eas
 | 5 | 2026-07-05 | **Refresh button animation**: spin animation on the refresh button provides satisfying micro-feedback |
 | 6 | 2026-07-05 | **Search "not found" state**: user sees "Городов не найдено" instead of empty disappearing results |
 | 7 | 2026-07-05 | **Design guide**: documented visual language, component patterns, and accessibility decisions |
+| 8 | 2026-07-05 | **Animated SVG weather icons**: custom vector illustrations (8 types) replace emoji — scalable, theme-adaptive, with independent internal element animations (spinning sun rays, falling raindrops, drifting clouds, etc.) |
 
 ## Design Principles
 
