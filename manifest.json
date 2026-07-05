@@ -3,6 +3,7 @@
   "short_name": "Погода",
   "description": "Красивый прогноз погоды от Open-Meteo",
   "start_url": ".",
+  "scope": "/supercat/",
   "display": "standalone",
   "background_color": "#302b63",
   "theme_color": "#302b63",
