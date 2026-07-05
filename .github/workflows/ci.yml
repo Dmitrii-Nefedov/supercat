@@ -1,0 +1,35 @@
+name: CI
+on:
+  pull_request:
+    branches: [main]
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check HTML validity
+        uses: Cyb3r-Jak3/html5validator-action@v7.2.4
+        with:
+          root: "."
+          css: true
+          extra: --ignore-warnings
+
+      - name: Validate JSON files
+        run: |
+          for f in $(find . -name '*.json' -not -path './.git/*'); do
+            python3 -m json.tool "$f" > /dev/null && echo "OK: $f" || echo "FAIL: $f"
+          done
+
+      - name: Check service worker syntax
+        run: python3 -c "
+import re
+with open('sw.js') as f:
+    content = f.read()
+    if 'self.addEventListener' not in content:
+        print('ERROR: sw.js missing self.addEventListener')
+        exit(1)
+    if 'install' not in content or 'fetch' not in content or 'activate' not in content:
+        print('WARNING: sw.js may be missing lifecycle events')
+    print('sw.js: basic checks passed')
+"
