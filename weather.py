@@ -20,6 +20,7 @@ WX_API = "https://api.open-meteo.com/v1/forecast"
 USER_AGENT = "supercat-weather/2.0"
 MAX_RETRIES = 3
 RETRY_DELAY = 1.0
+VERSION = "2.0.0"
 
 WMO_ICONS: dict[int, str] = {
     0: "\U00002600", 1: "\U0001f324", 2: "\U000026c5", 3: "\U00002601",
@@ -125,7 +126,7 @@ def _build_wx_params(city: City, hourly: bool = False) -> dict[str, Any]:
         "current": "temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m,cloud_cover,surface_pressure,uv_index",
         "daily": "weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_sum,precipitation_probability_max",
         "timezone": city.timezone,
-        "forecast_days": 7,
+        "forecast_days": 1 if hourly else 7,
     }
     if hourly:
         params["hourly"] = "temperature_2m,precipitation,weather_code,wind_speed_10m,wind_direction_10m"
@@ -364,6 +365,7 @@ def main() -> None:
         prog="weather.py",
         description="Supercat Weather — terminal weather from Open-Meteo",
     )
+    parser.add_argument("--version", "-V", action="version", version=f"%(prog)s {VERSION}")
     parser.add_argument("--format", "-f", choices=["text", "json"], default="text",
                         help="Output format (default: text)")
     sub = parser.add_subparsers(dest="command", required=True)

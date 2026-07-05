@@ -51,7 +51,7 @@ with open('sw.js') as f:
       - name: Run Python tests
         if: hashFiles('tests/test_weather.py') != ''
         run: |
-          pip install pytest requests
+          pip install pytest
           python3 -m pytest tests/test_weather.py -v
 
       - name: Run JavaScript tests

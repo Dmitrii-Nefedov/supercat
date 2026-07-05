@@ -15,6 +15,7 @@ from weather import (
     City,
     CityNotFoundError,
     ApiError,
+    VERSION,
     WMO_DESC,
     WMO_ICONS,
     api_get,
@@ -406,6 +407,40 @@ class TestCliCommands:
         with pytest.raises(SystemExit):
             cmd_current(ns)
 
+    @patch("weather.resolve_city")
+    def test_cmd_forecast_not_found(self, mock_resolve):
+        mock_resolve.side_effect = CityNotFoundError("City not found: X")
+        ns = type("Args", (), {"city": "X", "format": "text"})()
+        with pytest.raises(SystemExit):
+            cmd_forecast(ns)
+
+    @patch("weather.resolve_city")
+    def test_cmd_hourly_not_found(self, mock_resolve):
+        mock_resolve.side_effect = CityNotFoundError("City not found: X")
+        ns = type("Args", (), {"city": "X", "format": "text"})()
+        with pytest.raises(SystemExit):
+            cmd_hourly(ns)
+
+    @patch("weather.search_city")
+    def test_cmd_search_no_results(self, mock_search):
+        mock_search.return_value = []
+        ns = type("Args", (), {"query": "Xyzzy", "format": "text"})()
+        cmd_search(ns)  # should not raise
+
+    @patch("weather.search_city")
+    def test_cmd_search_no_results_json(self, mock_search):
+        mock_search.return_value = []
+        ns = type("Args", (), {"query": "Xyzzy", "format": "json"})()
+        cmd_search(ns)  # should not raise
+
+
+# --- Version ---
+
+
+class TestVersion:
+    def test_version_defined(self):
+        assert VERSION == "2.0.0"
+
 
 # --- CLI arg parsing ---
 
@@ -452,3 +487,16 @@ class TestCliParsing:
             with patch.object(sys, "argv", ["weather.py", "hr", "Moscow"]):
                 main()
             mock_cmd.assert_called_once()
+
+    def test_no_args_exits(self):
+        from weather import main
+        with patch.object(sys, "argv", ["weather.py"]):
+            with pytest.raises(SystemExit):
+                main()
+
+    def test_version_flag(self):
+        from weather import main
+        with patch.object(sys, "argv", ["weather.py", "--version"]):
+            with pytest.raises(SystemExit) as exc:
+                main()
+            assert exc.value.code == 0

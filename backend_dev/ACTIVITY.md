@@ -31,3 +31,21 @@ Python backend developer — writes clean, idiomatic Python code.
 ### Known issues
 - Workflow files require `workflow` scope PAT — confirmed working with owner token
 - `pyproject.toml` uses `[project.scripts]` entry point — `pip install -e .` to make `supercat-weather` available globally
+
+### Run 10 (2026-07-05)
+
+#### `weather.py` improvements
+- **`--version` / `-V` flag**: prints version and exits (uses `argparse` built-in `version` action)
+- **Bandwidth optimization**: hourly forecast mode now requests 1 day of daily data instead of 7 (reduces API response size)
+- **`VERSION` constant**: centralized at module level (`2.0.0`)
+
+#### Tests (`tests/test_weather.py`)
+- 7 new tests (60 total, all passing):
+  - `cmd_forecast_not_found`, `cmd_hourly_not_found` — city-not-found edge cases for all subcommands
+  - `cmd_search_no_results` — empty search in both text and JSON mode
+  - `test_no_args_exits` — `weather.py` with no args exits with code 2
+  - `test_version_flag` — `weather.py --version` exits with code 0
+  - `test_version_defined` — `VERSION` constant matches expected
+
+#### CI/CD workflows
+- Removed unused `requests` dependency from CI `pip install`
