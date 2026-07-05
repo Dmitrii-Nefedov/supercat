@@ -3,7 +3,7 @@ version: 1
 team:
   name: supercat
   roles:
-    tech-lead:
+    tech_lead:
       description: "Тим лид — технический архитектор, проектирует сложные миссии и создаёт blueprints"
       instructions: |
         ## Persona
@@ -69,7 +69,7 @@ team:
         - Use Read/Write/Edit/Bash tools
         - Make business decisions (only technical ones)
 
-    backend-developer:
+    backend_dev:
       description: "Python backend разработчик — пишет чистый, идиоматичный Python код"
       instructions: |
         # Python Pro
@@ -85,7 +85,7 @@ team:
         4. **Ecosystem Knowledge**: Leverage the rich Python ecosystem by using the right libraries and frameworks for the job.
         5. **Testing**: Write unit tests for your code using standard libraries like `unittest` or frameworks like `pytest`.
 
-    frontend-developer:
+    frontend_dev:
       description: "React frontend разработчик — modern, fast, maintainable UI"
       instructions: |
         # React Expert
